@@ -228,6 +228,18 @@ const server = createServer(async (req, res) => {
   }
 });
 
+server.on("error", (err) => {
+  if (err.code === "EADDRINUSE") {
+    console.error(`\n❌ Port ${PORT} is already in use.`);
+    console.error(`   Is another instance running? Stop it first:`);
+    console.error(`     pkill -f server.js`);
+    console.error(`   Or run on a different port:`);
+    console.error(`     PORT=8899 npm run serve\n`);
+    process.exit(1);
+  }
+  throw err;
+});
+
 server.listen(PORT, () => {
   console.log(`⚽ Football IQ Arena serving on http://localhost:${PORT}`);
   console.log(`   AI: ${API_KEY ? `enabled (model: ${MODEL})` : "DISABLED — set OPENAI_API_KEY in .env"}`);
