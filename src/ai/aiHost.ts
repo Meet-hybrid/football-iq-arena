@@ -3,7 +3,7 @@
 // real OpenAI generations later by implementing the same HostLine interface.
 // ---------------------------------------------------------------------------
 
-export const HOST_NAME = "Big Match Tunde";
+export const HOST_NAME = "Meethybrid";
 
 export type HostKey =
   | "welcome"
@@ -44,7 +44,7 @@ export interface HostCtx {
 
 const LINES: Record<HostKey, string[]> = {
   welcome: [
-    "Welcome, welcome, WELCOME to the Football IQ Arena! I'm your host, Big Match Tunde, and tonight {count} football brains are ready for battle. LET'S GO!",
+    "Welcome, welcome, WELCOME to the Football IQ Arena! I'm your host, Meethybrid, and tonight {count} football brains are ready for battle. LET'S GO!",
     "A big football night is here! {count} players, one arena, endless ball knowledge. Welcome to the Football IQ Arena!",
   ],
   turn: [
