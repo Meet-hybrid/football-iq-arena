@@ -348,6 +348,16 @@ export function gameReducer(state: GameState, action: Action): GameState {
 
     case "MARK_TIMED_ACCEPT": {
       if (s.phase !== "question" || !s.question || s.question.type !== "timed" || s.status !== "ask") return s;
+      // The UI pre-verifies (possibly with live AI) and passes the canonical
+      // answer; the reducer trusts it and only guards against duplicates.
+      const name = action.canonical?.trim();
+      if (name) {
+        if (s.timedBank.some((n) => n.toLowerCase() === name.toLowerCase())) return s;
+        s.timedBank = [...s.timedBank, name];
+        s.timedCorrectCount += 1;
+        s.delta = { [s.turnPlayerId]: s.timedCorrectCount * s.config.rules.timedPointValue };
+        return s;
+      }
       const res = checkAnswer(action.name, s.question, s.timedBank);
       if (res.ok && res.matched) {
         s.timedBank = [...s.timedBank, res.matched];
@@ -355,6 +365,17 @@ export function gameReducer(state: GameState, action: Action): GameState {
         s.delta = { [s.turnPlayerId]: s.timedCorrectCount * s.config.rules.timedPointValue };
       }
       return s;
+    }
+
+    case "ADD_AI_QUESTION": {
+      if (s.phase !== "number" || !s.category) return s;
+      if (action.category !== s.category) return s;
+      const pool = s.pools[action.category];
+      if (pool.some((q) => q.id === action.question.id)) return s;
+      return {
+        ...s,
+        pools: { ...s.pools, [action.category]: [...pool, action.question] },
+      };
     }
 
     case "TIMED_END": {

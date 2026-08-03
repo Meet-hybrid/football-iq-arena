@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Btn, Chip, Toggle, Wordmark } from "../components/ui";
 import { play } from "../audio/sound";
 import { HOST_NAME } from "../ai/aiHost";
+import { aiEnabled, setAIEnabled } from "../ai/openai";
 
 export function HomeScreen({
   sound,
@@ -16,6 +18,7 @@ export function HomeScreen({
   onDaily: () => void;
   onStats: () => void;
 }) {
+  const [liveAi, setLiveAi] = useState(aiEnabled());
   return (
     <div className="pitch-bg relative min-h-full overflow-hidden">
       {/* floodlights */}
@@ -94,10 +97,16 @@ export function HomeScreen({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.8 }}
-          className="flex items-center gap-3 rounded-full bg-white/5 px-4 py-2 text-sm text-white/70"
+          className="flex flex-wrap items-center justify-center gap-6 rounded-full bg-white/5 px-5 py-2.5 text-sm text-white/70"
         >
-          <span>🔊 Sound</span>
-          <Toggle on={sound} onChange={onToggleSound} />
+          <span className="flex items-center gap-2">
+            🔊 Sound
+            <Toggle on={sound} onChange={onToggleSound} />
+          </span>
+          <span className="flex items-center gap-2">
+            🤖 Live AI
+            <Toggle on={liveAi} onChange={(v) => { setLiveAi(v); setAIEnabled(v); }} />
+          </span>
         </motion.div>
 
         <p className="text-[11px] uppercase tracking-[0.3em] text-white/30">v0.1 — MVP build</p>

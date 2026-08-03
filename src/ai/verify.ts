@@ -18,6 +18,8 @@ export interface CheckResult {
   matched: string | null;
   display: string;
   confidence: "exact" | "fuzzy" | "none";
+  /** where the verdict came from — live AI or the local simulation */
+  source?: "ai" | "local";
 }
 
 const tokens = (s: string) => (s ? s.split(" ").filter(Boolean) : []);

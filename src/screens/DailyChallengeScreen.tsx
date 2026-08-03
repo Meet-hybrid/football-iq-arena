@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Btn, Chip, Confetti, Glass, Typewriter } from "../components/ui";
 import { CATEGORY_MAP, DIFFICULTY_MAP } from "../data/categories";
 import { dailyQuestion } from "../data/questionBank";
-import { checkAnswer } from "../ai/verify";
+import { aiVerify } from "../ai/openai";
 import { hostLine, HOST_NAME } from "../ai/aiHost";
 import { loadDaily, saveDaily, todayStr } from "../game/stats";
 import { play } from "../audio/sound";
@@ -29,9 +29,9 @@ export function DailyChallengeScreen({ onBack }: { onBack: () => void }) {
 
   const [streakState, setStreakState] = useState(streak);
 
-  function submit() {
+  async function submit() {
     if (!input.trim() || correct !== null) return;
-    const res = checkAnswer(input, q, []);
+    const res = await aiVerify(input, q, []);
     if (res.ok) {
       setCorrect(true);
       play("correct");

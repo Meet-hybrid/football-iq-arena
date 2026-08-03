@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Avatar, Btn, Chip, Typewriter } from "../components/ui";
 import { CATEGORY_MAP, DIFFICULTY_MAP } from "../data/categories";
 import { activeOrder, currentStealer } from "../game/engine";
-import { checkAnswer, type CheckResult } from "../ai/verify";
+import { type CheckResult } from "../ai/verify";
+import { aiVerify } from "../ai/openai";
 import { hostLine, HOST_NAME, HOST_AVATAR, questionScript } from "../ai/aiHost";
 import { speak, stopSpeaking, listen, ttsAvailable, sttAvailable } from "../audio/speech";
 import { play } from "../audio/sound";
@@ -31,6 +32,7 @@ export function QuestionScreen({
   const [remaining, setRemaining] = useState(0);
   const [total, setTotal] = useState(0);
   const [hintShown, setHintShown] = useState(false);
+  const [checking, setChecking] = useState(false);
   const stopListenRef = useRef<(() => void) | null>(null);
   const timedOutRef = useRef(false);
 
@@ -155,31 +157,36 @@ export function QuestionScreen({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q?.id]);
 
-  function doCheck(raw?: string) {
-    if (!q || state.status !== "ask") return;
+  async function doCheck(raw?: string) {
+    if (!q || state.status !== "ask" || checking) return;
     const text = (raw ?? checkText).trim();
     if (!text) return;
-    if (timed) {
-      const res = checkAnswer(text, q, state.timedBank);
-      setVerdict(res);
-      if (res.ok) {
-        dispatch({ type: "MARK_TIMED_ACCEPT", name: text });
-        if (sound) play("coin");
-      } else if (sound) {
-        play("wrong");
+    setChecking(true);
+    try {
+      if (timed) {
+        const res = await aiVerify(text, q, state.timedBank);
+        setVerdict(res);
+        if (res.ok && res.matched) {
+          dispatch({ type: "MARK_TIMED_ACCEPT", name: text, canonical: res.matched });
+          if (sound) play("coin");
+        } else if (sound) {
+          play("wrong");
+        }
+        setCheckText("");
+        return;
       }
+      const res = await aiVerify(text, q, []);
+      setVerdict(res);
       setCheckText("");
-      return;
-    }
-    const res = checkAnswer(text, q, []);
-    setVerdict(res);
-    setCheckText("");
-    if (q.type === "single" || q.type === "truefalse" || q.type === "thisorthat") {
-      setAiNote(res.display);
-      if (sound) (res.ok ? play("correct") : play("wrong"));
-      dispatch({ type: "MARK_ANSWER", correct: res.ok });
-    } else {
-      if (sound) (res.ok ? play("coin") : play("wrong"));
+      if (q.type === "single" || q.type === "truefalse" || q.type === "thisorthat") {
+        setAiNote(res.display);
+        if (sound) (res.ok ? play("correct") : play("wrong"));
+        dispatch({ type: "MARK_ANSWER", correct: res.ok });
+      } else {
+        if (sound) (res.ok ? play("coin") : play("wrong"));
+      }
+    } finally {
+      setChecking(false);
     }
   }
 
@@ -307,6 +314,11 @@ export function QuestionScreen({
                 className={`mt-3 text-sm font-semibold ${verdict.ok ? "text-emerald-400" : "text-flame-500"}`}
               >
                 {verdict.display}
+                {verdict.source && (
+                  <span className="ml-2 rounded-full bg-white/10 px-2 py-0.5 text-[10px] uppercase tracking-wide text-white/50">
+                    {verdict.source === "ai" ? "🤖 AI verified" : "💾 local check"}
+                  </span>
+                )}
               </motion.p>
             )}
           </motion.div>
@@ -335,7 +347,9 @@ export function QuestionScreen({
                       placeholder='e.g. "Ronaldinho"'
                       className="min-w-0 flex-1 rounded-lg bg-white/8 px-3 py-2 text-sm text-white outline-none placeholder:text-white/30 focus:bg-white/12"
                     />
-                    <Btn size="sm" onClick={() => doCheck()}>🤖 Check</Btn>
+                    <Btn size="sm" disabled={checking} onClick={() => doCheck()}>
+                      {checking ? "🤖…" : "🤖 Check"}
+                    </Btn>
                   </div>
                 </div>
               </motion.div>
@@ -356,7 +370,9 @@ export function QuestionScreen({
                       placeholder="e.g. Messi"
                       className="min-w-0 flex-1 rounded-lg bg-white/8 px-3 py-2 text-sm text-white outline-none placeholder:text-white/30 focus:bg-white/12"
                     />
-                    <Btn size="sm" onClick={() => doCheck()}>+ Add</Btn>
+                    <Btn size="sm" disabled={checking} onClick={() => doCheck()}>
+                      {checking ? "🤖…" : "+ Add"}
+                    </Btn>
                   </div>
                   {state.timedBank.length > 0 && (
                     <div className="mt-3 flex flex-wrap gap-1.5">

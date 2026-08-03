@@ -161,8 +161,9 @@ export type Action =
   | { type: "RANDOM_NUMBER" }
   | { type: "MARK_ANSWER"; correct: boolean }
   | { type: "TIMEOUT" }
-  | { type: "MARK_TIMED_ACCEPT"; name: string }
+  | { type: "MARK_TIMED_ACCEPT"; name: string; canonical?: string }
   | { type: "TIMED_END" }
+  | { type: "ADD_AI_QUESTION"; category: CategoryId; question: Question }
   | { type: "CHOOSE_STEALER"; id: string | null }
   | { type: "MARK_STEAL"; correct: boolean }
   | { type: "NEXT_TURN" }
