@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Btn, Chip, Confetti, Glass, Typewriter } from "../components/ui";
+import { Avatar, Btn, Chip, Confetti, Glass, Icon, Typewriter } from "../components/ui";
 import { CATEGORY_MAP, DIFFICULTY_MAP } from "../data/categories";
 import { dailyQuestion } from "../data/questionBank";
 import { aiVerify } from "../ai/openai";
@@ -52,20 +52,29 @@ export function DailyChallengeScreen({ onBack }: { onBack: () => void }) {
       {correct === true && <Confetti count={50} />}
       <div className="mx-auto max-w-xl">
         <div className="mb-6 flex items-center justify-between">
-          <Btn variant="ghost" size="sm" onClick={onBack}>← Back</Btn>
-          <h1 className="font-display text-xl text-white">📅 Daily Challenge</h1>
+          <Btn variant="ghost" size="sm" onClick={onBack}>
+            <Icon name="arrow-left" size={15} />
+            Back
+          </Btn>
+          <h1 className="flex items-center gap-2 font-display text-xl text-white">
+            <Icon name="calendar" size={20} className="text-gold-400" />
+            Daily Challenge
+          </h1>
           <div className="w-16" />
         </div>
 
         <div className="mb-4 flex items-center justify-center gap-3">
-          <Chip className="bg-white/10 text-white/80">🔥 {streakState} day streak</Chip>
+          <Chip className="bg-white/10 text-white/80">
+            <Icon name="flame" size={12} className="text-orange-400" />
+            {streakState} day streak
+          </Chip>
           <Chip className={`bg-gradient-to-r ${cat.gradient} text-white`}>{cat.emoji} {cat.name}</Chip>
-          <Chip className="bg-white/10 text-white/80">{DIFFICULTY_MAP[q.difficulty].emoji} {DIFFICULTY_MAP[q.difficulty].name}</Chip>
+          <Chip className="bg-white/10 text-white/80">{DIFFICULTY_MAP[q.difficulty].name}</Chip>
         </div>
 
         <Glass className="p-5">
           <div className="mb-3 flex items-center gap-2">
-            <span className="text-2xl">🎙️</span>
+            <Avatar icon="mic" size={28} ring={0} />
             <span className="text-xs font-bold text-gold-300">{HOST_NAME}</span>
           </div>
           <Typewriter text={hostLine("dailyIntro", {})} className="mb-4 text-sm text-white/80" />
@@ -83,15 +92,19 @@ export function DailyChallengeScreen({ onBack }: { onBack: () => void }) {
                 placeholder="Type your answer…"
                 className="min-w-0 flex-1 rounded-xl bg-white/8 px-4 py-3 text-sm text-white outline-none placeholder:text-white/30 focus:bg-white/12"
               />
-              <Btn onClick={submit}>🤖 Check</Btn>
+              <Btn onClick={submit}>
+                <Icon name="sparkles" size={15} />
+                Check
+              </Btn>
             </div>
             <p className="text-center text-xs text-white/40">One question. One shot. No pressure… okay, a little.</p>
           </div>
         ) : (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-5 space-y-3">
             <div className={`glass rounded-2xl p-5 text-center ${correct ? "" : ""}`}>
-              <div className={`font-display text-2xl ${correct ? "text-emerald-400" : "text-flame-500"}`}>
-                {correct ? "✅ Correct! Brilliant!" : "❌ Not this time!"}
+              <div className={`flex items-center justify-center gap-2 font-display text-2xl ${correct ? "text-emerald-400" : "text-flame-500"}`}>
+                <Icon name={correct ? "check" : "x"} size={26} />
+                {correct ? "Correct! Brilliant!" : "Not this time!"}
               </div>
               {!correct && (
                 <p className="mt-2 text-sm text-white/70">
@@ -102,11 +115,7 @@ export function DailyChallengeScreen({ onBack }: { onBack: () => void }) {
                 <span className="font-bold text-gold-300">Did you know? </span>
                 {q.explanation}
               </p>
-              <p className="mt-4 text-xs text-white/50">
-                {solvedToday && daily?.solved
-                  ? "Come back tomorrow for a new challenge! 🔥"
-                  : "Come back tomorrow for a new challenge!"}
-              </p>
+              <p className="mt-4 text-xs text-white/50">Come back tomorrow for a new challenge.</p>
             </div>
             <Btn variant="ghost" className="w-full" onClick={onBack}>Done</Btn>
           </motion.div>

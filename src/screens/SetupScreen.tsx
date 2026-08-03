@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Btn, Glass, Avatar, AVATAR_EMOJIS } from "../components/ui";
+import { Btn, Glass, Avatar, Icon, AVATAR_COUNT, avatarRingFor, type IconName } from "../components/ui";
 import { DIFFICULTIES, MODES } from "../data/categories";
 import { DEFAULT_RULES, createPlayer } from "../game/engine";
 import type { Difficulty, GameConfig, GameModeId, HouseRules, Player } from "../types";
@@ -8,6 +8,24 @@ import { play } from "../audio/sound";
 
 const MAX_PLAYERS = 10;
 const MIN_PLAYERS = 2;
+
+const MODE_ICONS: Record<GameModeId, IconName> = {
+  classic: "target",
+  sudden: "bolt",
+  timeattack: "clock",
+  tournament: "trophy",
+  knockout: "shield",
+  league: "chart",
+  randommix: "dice",
+  party: "users",
+};
+
+const DIFF_DOTS: Record<Difficulty, string> = {
+  easy: "bg-emerald-500",
+  medium: "bg-yellow-400",
+  hard: "bg-orange-500",
+  legendary: "bg-red-600",
+};
 
 export function SetupScreen({
   onStart,
@@ -19,8 +37,8 @@ export function SetupScreen({
   const [teamMode, setTeamMode] = useState(false);
   const [teamCount, setTeamCount] = useState(2);
   const [players, setPlayers] = useState<{ name: string; avatar: string; team: number }[]>([
-    { name: "", avatar: AVATAR_EMOJIS[0], team: 0 },
-    { name: "", avatar: AVATAR_EMOJIS[1], team: 1 },
+    { name: "", avatar: "0", team: 0 },
+    { name: "", avatar: "1", team: 1 },
   ]);
   const [mode, setMode] = useState<GameModeId>("classic");
   const [difficulty, setDifficulty] = useState<Difficulty>("medium");
@@ -41,9 +59,12 @@ export function SetupScreen({
     const idx = players.length;
     setPlayers((ps) => [
       ...ps,
-      { name: "", avatar: AVATAR_EMOJIS[idx % AVATAR_EMOJIS.length], team: teamMode ? idx % teamCount : 0 },
+      { name: "", avatar: String(idx % AVATAR_COUNT), team: teamMode ? idx % teamCount : 0 },
     ]);
   };
+
+  const cycleAvatar = (i: number) =>
+    setPlayer(i, { avatar: String((avatarRingFor(players[i].avatar, i) + 1) % AVATAR_COUNT) });
 
   const validPlayers = useMemo(() => players.filter((p) => p.name.trim().length > 0), [players]);
   const teamValid = useMemo(() => {
@@ -66,7 +87,7 @@ export function SetupScreen({
         .map((p, i) => createPlayer(`p${i}`, p.name.trim(), p.avatar, { teamId: `team${p.team}` }));
       const teamPlayers: Player[] = Array.from({ length: teamCount }, (_, t) => {
         const members = individuals.filter((p) => p.teamId === `team${t}`);
-        return createPlayer(`team${t}`, `Team ${t + 1}`, ["🟢", "🔵", "🟠", "🟣"][t], {
+        return createPlayer(`team${t}`, `Team ${t + 1}`, String(t), {
           members: members.map((m) => m.id),
           isTeam: true,
         });
@@ -92,7 +113,8 @@ export function SetupScreen({
       <div className="mx-auto max-w-5xl">
         <div className="mb-6 flex items-center justify-between">
           <Btn variant="ghost" size="sm" onClick={() => { play("pop"); onBack(); }}>
-            ← Back
+            <Icon name="arrow-left" size={15} />
+            Back
           </Btn>
           <h1 className="font-display text-xl text-white sm:text-2xl">Game Setup</h1>
           <div className="w-16" />
@@ -152,17 +174,13 @@ export function SetupScreen({
                     >
                       <span className="w-5 text-center text-xs text-white/40">{i + 1}</span>
                       <div className="relative">
-                        <Avatar emoji={p.avatar} size={40} ring={i} />
+                        <Avatar name={p.name} size={40} ring={avatarRingFor(p.avatar, i)} />
                         <button
-                          onClick={() =>
-                            setPlayer(i, {
-                              avatar: AVATAR_EMOJIS[(AVATAR_EMOJIS.indexOf(p.avatar) + 1) % AVATAR_EMOJIS.length],
-                            })
-                          }
+                          onClick={() => cycleAvatar(i)}
                           className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-white/20 text-[10px] hover:bg-white/35"
-                          title="Change avatar"
+                          title="Change colour"
                         >
-                          🔄
+                          <Icon name="refresh" size={11} className="text-white/80" />
                         </button>
                       </div>
                       <input
@@ -181,7 +199,7 @@ export function SetupScreen({
                               className={`h-6 w-6 rounded-full text-xs ${p.team === t ? "ring-2 ring-gold-400" : "opacity-40"}`}
                               style={{ background: ["#34d399", "#38bdf8", "#fb923c", "#c084fc"][t] }}
                             >
-                              {p.team === t ? "✓" : ""}
+                              {p.team === t && <Icon name="check" size={13} className="mx-auto text-white" />}
                             </button>
                           ))}
                         </div>
@@ -190,8 +208,9 @@ export function SetupScreen({
                         <button
                           onClick={() => setPlayers((ps) => ps.filter((_, j) => j !== i))}
                           className="px-2 text-white/40 hover:text-red-400"
+                          aria-label="Remove player"
                         >
-                          ✕
+                          <Icon name="x" size={16} />
                         </button>
                       )}
                     </motion.div>
@@ -202,9 +221,10 @@ export function SetupScreen({
               {players.length < MAX_PLAYERS && (
                 <button
                   onClick={addPlayer}
-                  className="mt-3 w-full rounded-xl border border-dashed border-white/20 py-2.5 text-sm text-white/60 hover:border-gold-400/50 hover:text-gold-300"
+                  className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-white/20 py-2.5 text-sm text-white/60 hover:border-gold-400/50 hover:text-gold-300"
                 >
-                  + Add player ({players.length}/{MAX_PLAYERS})
+                  <Icon name="plus" size={15} />
+                  Add player ({players.length}/{MAX_PLAYERS})
                 </button>
               )}
               {!canStart && (
@@ -230,8 +250,8 @@ export function SetupScreen({
                         : "border-white/10 bg-white/5 hover:border-white/25"
                     }`}
                   >
-                    <div className="text-2xl">{m.emoji}</div>
-                    <div className="mt-1 text-sm font-bold">{m.name}</div>
+                    <Icon name={MODE_ICONS[m.id]} size={20} className={mode === m.id ? "text-gold-300" : "text-white/55"} />
+                    <div className="mt-1.5 text-sm font-bold">{m.name}</div>
                     <div className="mt-0.5 text-[11px] leading-tight text-white/50">{m.blurb}</div>
                   </button>
                 ))}
@@ -245,12 +265,12 @@ export function SetupScreen({
                       <button
                         key={d.id}
                         onClick={() => { play("pop"); setDifficulty(d.id); }}
-                        className={`rounded-lg px-1 py-2 text-center transition ${
+                        className={`flex flex-col items-center gap-1 rounded-lg px-1 py-2 text-center transition ${
                           difficulty === d.id ? "bg-gold-500 text-pitch-950" : "bg-white/5 text-white/70"
                         }`}
                       >
-                        <div className="text-base">{d.emoji}</div>
-                        <div className="text-[10px] font-bold">{d.name}</div>
+                        <span className={`h-2.5 w-2.5 rounded-full ${DIFF_DOTS[d.id]} ${difficulty === d.id ? "" : "opacity-60"}`} />
+                        <span className="text-[10px] font-bold">{d.name}</span>
                       </button>
                     ))}
                   </div>
@@ -261,9 +281,13 @@ export function SetupScreen({
                       {mode === "knockout" || mode === "league" ? "Rounds (before eliminations/table)" : "Rounds per player"}
                     </div>
                     <div className="flex items-center gap-3">
-                      <Btn size="sm" variant="ghost" onClick={() => setRounds((r) => Math.max(1, r - 1))}>−</Btn>
+                      <Btn size="sm" variant="ghost" onClick={() => setRounds((r) => Math.max(1, r - 1))}>
+                        <Icon name="minus" size={14} />
+                      </Btn>
                       <span className="font-score w-10 text-center text-4xl text-gold-300">{rounds}</span>
-                      <Btn size="sm" variant="ghost" onClick={() => setRounds((r) => Math.min(10, r + 1))}>+</Btn>
+                      <Btn size="sm" variant="ghost" onClick={() => setRounds((r) => Math.min(10, r + 1))}>
+                        <Icon name="plus" size={14} />
+                      </Btn>
                     </div>
                   </div>
                 )}
@@ -279,7 +303,7 @@ export function SetupScreen({
                 className="flex w-full items-center justify-between"
               >
                 <h2 className="font-display text-sm uppercase tracking-widest text-gold-300">House Rules</h2>
-                <span className="text-white/50">{showRules ? "▲" : "▼"}</span>
+                <Icon name={showRules ? "chevron-up" : "chevron-down"} size={16} className="text-white/50" />
               </button>
               <AnimatePresence>
                 {showRules && (
@@ -344,7 +368,10 @@ export function SetupScreen({
               <div className="space-y-2 text-sm text-white/75">
                 <div className="flex justify-between">
                   <span>Mode</span>
-                  <span className="font-bold text-gold-300">{modeMeta.emoji} {modeMeta.name}</span>
+                  <span className="flex items-center gap-1.5 font-bold text-gold-300">
+                    <Icon name={MODE_ICONS[mode]} size={15} />
+                    {modeMeta.name}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span>Difficulty</span>
@@ -364,7 +391,8 @@ export function SetupScreen({
                 </div>
               </div>
               <Btn className="mt-4 w-full" size="lg" disabled={!canStart} onClick={start}>
-                🏟️ Kick Off!
+                <Icon name="trophy" size={18} />
+                Kick Off
               </Btn>
             </Glass>
           </div>

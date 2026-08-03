@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Btn, Glass, Stat } from "../components/ui";
+import { Btn, Glass, Icon, Stat } from "../components/ui";
 import { loadCareer, loadWeekly, loadDaily } from "../game/stats";
 import { ACHIEVEMENTS } from "../data/achievements";
 import type { CareerStats } from "../types";
@@ -39,8 +39,14 @@ export function StatsScreen({ onBack }: { onBack: () => void }) {
     <div className="pitch-bg min-h-full px-4 py-6">
       <div className="mx-auto max-w-3xl">
         <div className="mb-6 flex items-center justify-between">
-          <Btn variant="ghost" size="sm" onClick={onBack}>← Back</Btn>
-          <h1 className="font-display text-xl text-white">My Stats</h1>
+          <Btn variant="ghost" size="sm" onClick={onBack}>
+            <Icon name="arrow-left" size={15} />
+            Back
+          </Btn>
+          <h1 className="flex items-center gap-2 font-display text-xl text-white">
+            <Icon name="chart" size={20} className="text-gold-400" />
+            My Stats
+          </h1>
           <div className="w-16" />
         </div>
 
@@ -57,8 +63,14 @@ export function StatsScreen({ onBack }: { onBack: () => void }) {
           <Glass className="mt-6 p-4">
             <p className="text-xs uppercase tracking-widest text-white/50">Daily challenge</p>
             <div className="mt-2 flex items-center justify-between">
-              <span className="font-score text-3xl text-gold-300">🔥 {daily.streak} day streak</span>
-              <span className="text-sm text-white/70">{daily.solved ? "✅ Solved today" : "❌ Not yet today"}</span>
+              <span className="flex items-center gap-2 font-score text-3xl text-gold-300">
+                <Icon name="flame" size={24} className="text-orange-400" />
+                {daily.streak} day streak
+              </span>
+              <span className="flex items-center gap-1.5 text-sm text-white/70">
+                <Icon name={daily.solved ? "check" : "x"} size={15} className={daily.solved ? "text-emerald-400" : "text-flame-500"} />
+                {daily.solved ? "Solved today" : "Not yet today"}
+              </span>
             </div>
           </Glass>
         )}
@@ -85,8 +97,9 @@ export function StatsScreen({ onBack }: { onBack: () => void }) {
         </Glass>
 
         <Glass className="mt-6 p-4">
-          <p className="mb-3 text-xs uppercase tracking-widest text-white/50">
-            🎖️ Achievements · {totals.achievements.length}/{ACHIEVEMENTS.length}
+          <p className="mb-3 flex items-center gap-1.5 text-xs uppercase tracking-widest text-white/50">
+            <Icon name="medal" size={14} />
+            Achievements · {totals.achievements.length}/{ACHIEVEMENTS.length}
           </p>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {ACHIEVEMENTS.map((a) => {
@@ -96,7 +109,7 @@ export function StatsScreen({ onBack }: { onBack: () => void }) {
                   key={a.id}
                   className={`rounded-xl border p-3 ${unlocked ? "border-gold-400/50 bg-gold-400/10" : "border-white/8 bg-white/3 opacity-45"}`}
                 >
-                  <div className="text-2xl">{unlocked ? a.emoji : "🔒"}</div>
+                  <div className="text-2xl">{unlocked ? a.emoji : <Icon name="lock" size={22} className="text-white/40" />}</div>
                   <div className="mt-1 text-xs font-bold">{a.name}</div>
                   <div className="text-[10px] leading-tight text-white/50">{a.blurb}</div>
                 </div>
@@ -106,7 +119,10 @@ export function StatsScreen({ onBack }: { onBack: () => void }) {
         </Glass>
 
         <Glass className="mt-6 p-4">
-          <p className="mb-3 text-xs uppercase tracking-widest text-white/50">🗓️ Weekly leaderboard</p>
+          <p className="mb-3 flex items-center gap-1.5 text-xs uppercase tracking-widest text-white/50">
+            <Icon name="calendar" size={14} />
+            Weekly leaderboard
+          </p>
           <div className="space-y-1.5">
             {weekly.length === 0 && <p className="text-sm text-white/40">No points this week yet.</p>}
             {weekly.map((w, i) => (

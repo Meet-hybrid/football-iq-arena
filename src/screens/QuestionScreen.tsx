@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Avatar, Btn, Chip, Typewriter } from "../components/ui";
+import { Avatar, Btn, Chip, Icon, Typewriter, avatarRingFor } from "../components/ui";
 import { CATEGORY_MAP, DIFFICULTY_MAP } from "../data/categories";
 import { activeOrder, currentStealer } from "../game/engine";
 import { type CheckResult } from "../ai/verify";
 import { aiVerify } from "../ai/openai";
-import { hostLine, HOST_NAME, HOST_AVATAR, questionScript } from "../ai/aiHost";
+import { hostLine, HOST_NAME, questionScript } from "../ai/aiHost";
 import { speak, stopSpeaking, listen, ttsAvailable, sttAvailable } from "../audio/speech";
 import { play } from "../audio/sound";
 import type { GameState } from "../types";
@@ -247,7 +247,7 @@ export function QuestionScreen({
           {/* AI host */}
           <div className="glass flex items-start gap-3 rounded-2xl p-4">
             <div className="shrink-0">
-              <Avatar emoji={HOST_AVATAR} size={52} ring={0} />
+              <Avatar icon="mic" size={52} ring={0} />
               <div className="mt-1 text-center text-[10px] font-bold text-gold-300">{HOST_NAME}</div>
             </div>
             <div className="min-w-0 flex-1">
@@ -258,13 +258,18 @@ export function QuestionScreen({
                 {ttsAvailable() && (
                   <button
                     onClick={() => speak(questionScript(q))}
-                    className="rounded-lg bg-white/8 px-3 py-1 text-xs text-white/70 hover:bg-white/15"
+                    className="flex items-center gap-1.5 rounded-lg bg-white/8 px-3 py-1 text-xs text-white/70 hover:bg-white/15"
                   >
-                    🔊 Read question
+                    <Icon name="volume" size={13} />
+                    Read question
                   </button>
                 )}
-                <button onClick={() => stopSpeaking()} className="rounded-lg bg-white/8 px-3 py-1 text-xs text-white/70 hover:bg-white/15">
-                  ⏹ Stop
+                <button
+                  onClick={() => stopSpeaking()}
+                  className="flex items-center gap-1.5 rounded-lg bg-white/8 px-3 py-1 text-xs text-white/70 hover:bg-white/15"
+                >
+                  <Icon name="stop" size={13} />
+                  Stop
                 </button>
                 {!timed && state.status === "ask" && (
                   <button
@@ -276,17 +281,19 @@ export function QuestionScreen({
                       if (sound) play("hint");
                       setHintShown(true);
                     }}
-                    className="rounded-lg bg-white/8 px-3 py-1 text-xs text-white/70 hover:bg-white/15"
+                    className="flex items-center gap-1.5 rounded-lg bg-white/8 px-3 py-1 text-xs text-white/70 hover:bg-white/15"
                   >
-                    💡 Hint
+                    <Icon name="lightbulb" size={13} />
+                    Hint
                   </button>
                 )}
                 {sttAvailable() && state.status === "ask" && (
                   <button
                     onClick={toggleMic}
-                    className={`rounded-lg px-3 py-1 text-xs ${listening ? "animate-pulse bg-flame-500 text-white" : "bg-white/8 text-white/70 hover:bg-white/15"}`}
+                    className={`flex items-center gap-1.5 rounded-lg px-3 py-1 text-xs ${listening ? "animate-pulse bg-flame-500 text-white" : "bg-white/8 text-white/70 hover:bg-white/15"}`}
                   >
-                    🎤 {listening ? "Listening…" : "Voice answer"}
+                    <Icon name="mic" size={13} />
+                    {listening ? "Listening…" : "Voice answer"}
                   </button>
                 )}
               </div>
@@ -318,8 +325,9 @@ export function QuestionScreen({
               >
                 {verdict.display}
                 {verdict.source && (
-                  <span className="ml-2 rounded-full bg-white/10 px-2 py-0.5 text-[10px] uppercase tracking-wide text-white/50">
-                    {verdict.source === "ai" ? "🤖 AI verified" : "💾 local check"}
+                  <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-white/10 px-2 py-0.5 text-[10px] uppercase tracking-wide text-white/50">
+                    <Icon name={verdict.source === "ai" ? "sparkles" : "disk"} size={11} />
+                    {verdict.source === "ai" ? "AI verified" : "Local check"}
                   </span>
                 )}
               </motion.p>
@@ -332,20 +340,23 @@ export function QuestionScreen({
               <motion.div key="ask" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-3">
                 <div>
                   <div className="mb-2 text-center text-[11px] uppercase tracking-widest text-white/40">
-                    🎙️ Host verdict — tap after the player answers aloud
+                    Host verdict — tap after the player answers aloud
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <Btn variant="success" size="lg" onClick={() => dispatch({ type: "MARK_ANSWER", correct: true })}>
-                      ✓ Correct
+                      <Icon name="check" size={18} />
+                      Correct
                     </Btn>
                     <Btn variant="danger" size="lg" onClick={() => dispatch({ type: "MARK_ANSWER", correct: false })}>
-                      ✗ Wrong
+                      <Icon name="x" size={18} />
+                      Wrong
                     </Btn>
                   </div>
                 </div>
                 <div className="glass rounded-xl p-3">
-                  <div className="mb-1.5 text-[11px] uppercase tracking-widest text-white/40">
-                    🤖 AI answer check — type or say the answer, AI judges it
+                  <div className="mb-1.5 flex items-center gap-1.5 text-[11px] uppercase tracking-widest text-white/40">
+                    <Icon name="sparkles" size={12} />
+                    AI answer check — type or say the answer, AI judges it
                   </div>
                   <div className="flex gap-2">
                     <input
@@ -356,7 +367,17 @@ export function QuestionScreen({
                       className="min-w-0 flex-1 rounded-lg bg-white/8 px-3 py-2 text-sm text-white outline-none placeholder:text-white/30 focus:bg-white/12"
                     />
                     <Btn size="sm" disabled={checking} onClick={() => doCheck()}>
-                      {checking ? "🤖…" : "🤖 Check"}
+                      {checking ? (
+                        <>
+                          <Icon name="sparkles" size={13} className="animate-pulse" />
+                          Checking…
+                        </>
+                      ) : (
+                        <>
+                          <Icon name="sparkles" size={13} />
+                          Check
+                        </>
+                      )}
                     </Btn>
                   </div>
                 </div>
@@ -379,7 +400,7 @@ export function QuestionScreen({
                       className="min-w-0 flex-1 rounded-lg bg-white/8 px-3 py-2 text-sm text-white outline-none placeholder:text-white/30 focus:bg-white/12"
                     />
                     <Btn size="sm" disabled={checking} onClick={() => doCheck()}>
-                      {checking ? "🤖…" : "+ Add"}
+                      {checking ? "Checking…" : "+ Add"}
                     </Btn>
                   </div>
                   {state.timedBank.length > 0 && (
@@ -391,7 +412,8 @@ export function QuestionScreen({
                   )}
                 </div>
                 <Btn variant="outline" size="lg" className="w-full" onClick={() => dispatch({ type: "TIMED_END" })}>
-                  ⏹ End turn early
+                  <Icon name="stop" size={16} />
+                  End turn early
                 </Btn>
               </motion.div>
             )}
@@ -406,7 +428,8 @@ export function QuestionScreen({
                     const p = state.players[oid];
                     return (
                       <Btn key={oid} variant="ghost" onClick={() => dispatch({ type: "CHOOSE_STEALER", id: oid })}>
-                        <span className="mr-1">{p?.avatar}</span> {p?.name}
+                        <Avatar name={p?.name ?? "?"} size={22} ring={avatarRingFor(p?.avatar, 0)} />
+                        {p?.name}
                       </Btn>
                     );
                   })}
@@ -418,16 +441,17 @@ export function QuestionScreen({
             )}
 
             {state.status === "steal-ask" && stealer && (
-              <motion.div key="stealask" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-3">
-                <p className="text-center font-display text-lg text-gold-300">
-                  🕶️ Steal attempt — <span className="text-white">{stealer.name}</span>
-                </p>
+              <motion.div key="stealask" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-3">                    <p className="text-center font-display text-lg text-gold-300">
+                      Steal attempt — <span className="text-white">{stealer.name}</span>
+                    </p>
                 <div className="grid grid-cols-2 gap-3">
                   <Btn variant="success" size="lg" onClick={() => dispatch({ type: "MARK_STEAL", correct: true })}>
-                    ✓ {stealer.name} got it (+{state.config.rules.stealValue})
+                    <Icon name="check" size={18} />
+                    {stealer.name} got it (+{state.config.rules.stealValue})
                   </Btn>
                   <Btn variant="danger" size="lg" onClick={() => dispatch({ type: "MARK_STEAL", correct: false })}>
-                    ✗ Missed
+                    <Icon name="x" size={18} />
+                    Missed
                   </Btn>
                 </div>
               </motion.div>
@@ -436,7 +460,7 @@ export function QuestionScreen({
             {state.status === "resolved" && (
               <motion.div key="resolved" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
                 <div className="glass rounded-2xl p-5">
-                  <div className="mb-2 text-[11px] uppercase tracking-widest text-white/40">Answer{state.delta && Object.keys(state.delta).length ? "" : "s"}</div>
+                  <div className="mb-2 text-[11px] uppercase tracking-widest text-white/40">Answers</div>
                   {timed ? (
                     <p className="text-white/90">
                       <span className="font-score text-3xl text-gold-300">{state.timedCorrectCount}</span> names ·{" "}
@@ -453,7 +477,12 @@ export function QuestionScreen({
                       )}
                     </div>
                   )}
-                  {aiNote && <p className="mt-2 text-xs text-gold-300">🤖 {aiNote}</p>}
+                  {aiNote && (
+                    <p className="mt-2 flex items-center gap-1.5 text-xs text-gold-300">
+                      <Icon name="sparkles" size={12} />
+                      {aiNote}
+                    </p>
+                  )}
                   <p className="mt-3 text-sm leading-relaxed text-white/75">
                     <span className="font-bold text-gold-300">Did you know? </span>
                     {q.explanation}
@@ -489,7 +518,7 @@ export function QuestionScreen({
                       } ${p.eliminated ? "opacity-35" : ""}`}
                     >
                       <span className="w-4 text-xs text-white/40">{i + 1}</span>
-                      <Avatar emoji={p.avatar} size={30} ring={i} />
+                      <Avatar name={p.name} size={30} ring={avatarRingFor(p.avatar, i)} />
                       <div className="min-w-0 flex-1">
                         <div className="truncate text-sm font-semibold">
                           {p.name}

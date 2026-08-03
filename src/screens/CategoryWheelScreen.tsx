@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, animate } from "framer-motion";
-import { Btn, Avatar, Glass } from "../components/ui";
+import { Btn, Avatar, Glass, Icon, avatarRingFor } from "../components/ui";
 import { CATEGORIES } from "../data/categories";
 import type { CategoryId, GameState } from "../types";
 import type { Dispatch } from "react";
@@ -97,7 +97,7 @@ export function CategoryWheelScreen({
     <div className="pitch-bg min-h-full px-4 py-6">
       <div className="mx-auto flex max-w-4xl flex-col items-center gap-6">
         <div className="flex items-center gap-3">
-          <Avatar emoji={player?.avatar ?? "🙋"} size={48} ring={state.turnIndex} active />
+          <Avatar name={player?.name ?? "?"} size={48} ring={avatarRingFor(player?.avatar, state.turnIndex)} active />
           <div className="text-center">
             <p className="text-xs uppercase tracking-widest text-white/50">
               {state.config.mode === "tournament" ? "Tournament match" : "Round " + Math.max(1, state.roundIndex + 1)} · {player?.name}'s turn
@@ -142,12 +142,17 @@ export function CategoryWheelScreen({
         {landed ? (
           <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-center">
             <span className={`font-display text-2xl text-gradient-gold`}>
-              {CATEGORIES.find((c) => c.id === landed)?.emoji} {CATEGORIES.find((c) => c.id === landed)?.name}!
+              {CATEGORIES.find((c) => c.id === landed)?.name}!
             </span>
           </motion.div>
         ) : (
           <Btn size="lg" disabled={spinning} onClick={() => spinTo(CATEGORIES[Math.floor(Math.random() * N)].id)}>
-            {spinning ? "Spinning…" : "🎡 Spin the Wheel"}
+            {spinning ? "Spinning…" : (
+              <>
+                <Icon name="dice" size={18} />
+                Spin the Wheel
+              </>
+            )}
           </Btn>
         )}
 

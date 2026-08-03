@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Avatar, Btn, Chip, Glass } from "../components/ui";
+import { Avatar, Btn, Chip, Glass, Icon, avatarRingFor } from "../components/ui";
 import { CATEGORY_MAP } from "../data/categories";
 import { aiGenerateQuestion } from "../ai/openai";
 import type { Action, GameState } from "../types";
@@ -27,10 +27,10 @@ export function NumberSelectScreen({
     const q = await aiGenerateQuestion(state.category, state.config.difficulty);
     if (q) {
       dispatch({ type: "ADD_AI_QUESTION", category: state.category, question: q });
-      setGenMsg(`✨ AI added question #${state.pools[state.category].length + 1} to the board!`);
+      setGenMsg(`AI added question #${state.pools[state.category].length + 1} to the board.`);
       play("coin");
     } else {
-      setGenMsg("🤖 Live AI unavailable right now — try again in a moment.");
+      setGenMsg("Live AI unavailable right now — try again in a moment.");
       play("wrong");
     }
     setGenerating(false);
@@ -45,7 +45,7 @@ export function NumberSelectScreen({
     <div className="pitch-bg min-h-full px-4 py-6">
       <div className="mx-auto flex max-w-2xl flex-col items-center gap-6">
         <div className="flex items-center gap-3">
-          <Avatar emoji={player?.avatar ?? "🙋"} size={48} ring={state.turnIndex} active />
+          <Avatar name={player?.name ?? "?"} size={48} ring={avatarRingFor(player?.avatar, state.turnIndex)} active />
           <div className="text-center">
             <p className="text-xs uppercase tracking-widest text-white/50">{player?.name}'s turn</p>
             <p className="font-display text-lg text-white">
@@ -60,8 +60,9 @@ export function NumberSelectScreen({
 
         <Glass className="w-full p-5">
           {allUsed && (
-            <p className="mb-3 text-center text-sm text-gold-300">
-              🔄 All questions used — the board resets!
+            <p className="mb-3 flex items-center justify-center gap-1.5 text-center text-sm text-gold-300">
+              <Icon name="refresh" size={14} />
+              All questions used — the board resets.
             </p>
           )}
           <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${gridCols}, minmax(0,1fr))` }}>
@@ -85,7 +86,11 @@ export function NumberSelectScreen({
                   }`}
                 >
                   {n}
-                  {isUsed && <span className="absolute inset-0 flex items-center justify-center text-lg opacity-40">✓</span>}
+                  {isUsed && (
+                    <span className="absolute inset-0 flex items-center justify-center opacity-40">
+                      <Icon name="check" size={20} />
+                    </span>
+                  )}
                 </motion.button>
               );
             })}
@@ -94,7 +99,8 @@ export function NumberSelectScreen({
 
         <div className="flex flex-wrap items-center justify-center gap-3">
           <Btn size="lg" onClick={() => { play("coin"); dispatch({ type: "RANDOM_NUMBER" }); }}>
-            🎲 Generate Random Number
+            <Icon name="dice" size={18} />
+            Random Number
           </Btn>
           <Btn
             size="lg"
@@ -102,7 +108,17 @@ export function NumberSelectScreen({
             disabled={generating}
             onClick={generateAIQuestion}
           >
-            {generating ? "✨ Thinking…" : "✨ Generate AI Question"}
+            {generating ? (
+              <>
+                <Icon name="sparkles" size={16} className="animate-pulse" />
+                Thinking…
+              </>
+            ) : (
+              <>
+                <Icon name="sparkles" size={16} />
+                AI Question
+              </>
+            )}
           </Btn>
         </div>
         {genMsg && <p className="text-center text-sm text-gold-300">{genMsg}</p>}

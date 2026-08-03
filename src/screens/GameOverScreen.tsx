@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from "react";
 import { motion } from "framer-motion";
-import { Avatar, Btn, Confetti, Glass, Stat } from "../components/ui";
+import { Avatar, Btn, Confetti, Glass, Icon, Stat, avatarRingFor } from "../components/ui";
 import { winnersOf } from "../game/engine";
 import { finalizeGame, loadCareer, loadWeekly } from "../game/stats";
 import { ACHIEVEMENTS } from "../data/achievements";
@@ -75,9 +75,10 @@ export function GameOverScreen({
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ type: "spring", stiffness: 200, damping: 16 }}
-          className="mt-2 text-center font-display text-3xl text-gradient-gold text-shadow-glow sm:text-5xl"
+          className="mt-2 flex items-center justify-center gap-3 text-center font-display text-3xl text-gradient-gold sm:text-5xl"
         >
-          {champ?.avatar} {champ?.name} WINS!
+          <Icon name="trophy" size={40} className="text-gold-400" />
+          {champ?.name} WINS!
         </motion.h1>
         <motion.p
           initial={{ opacity: 0 }}
@@ -93,7 +94,7 @@ export function GameOverScreen({
           {podium.map((p, i) => {
             if (!p) return <div key={i} className="w-24" />;
             const heights = ["h-24", "h-32", "h-16"];
-            const medals = ["🥈", "🥇", "🥉"];
+            const medals = ["text-slate-300", "text-gold-400", "text-amber-700"];
             return (
               <motion.div
                 key={p.id}
@@ -102,8 +103,8 @@ export function GameOverScreen({
                 transition={{ delay: 0.5 + i * 0.18, type: "spring", stiffness: 180, damping: 18 }}
                 className="flex w-24 flex-col items-center"
               >
-                <div className="mb-1 text-2xl">{medals[i]}</div>
-                <Avatar emoji={p.avatar} size={44} ring={entries.indexOf(p)} />
+                <Icon name="medal" size={26} className={`mb-1 ${medals[i]}`} />
+                <Avatar name={p.name} size={44} ring={avatarRingFor(p.avatar, entries.indexOf(p))} />
                 <div className="mt-1 w-full truncate text-center text-xs font-bold">{p.name}</div>
                 <div
                   className={`mt-2 w-full rounded-t-xl bg-gradient-to-t from-gold-600/80 to-gold-400/50 ${heights[i]} flex items-start justify-center pt-2`}
@@ -125,8 +126,9 @@ export function GameOverScreen({
 
         {unlocked.length > 0 && (
           <div className="mt-6">
-            <p className="mb-2 text-center text-xs uppercase tracking-widest text-gold-300">
-              🎖️ Achievements unlocked
+            <p className="mb-2 flex items-center justify-center gap-1.5 text-center text-xs uppercase tracking-widest text-gold-300">
+              <Icon name="medal" size={14} />
+              Achievements unlocked
             </p>
             <div className="flex flex-wrap justify-center gap-2">
               {unlocked.map((id) => {
@@ -154,8 +156,9 @@ export function GameOverScreen({
 
         {weekly.length > 0 && (
           <Glass className="mt-6 p-4">
-            <p className="mb-2 text-center text-xs uppercase tracking-widest text-white/50">
-              🗓️ This week's leaderboard
+            <p className="mb-2 flex items-center justify-center gap-1.5 text-center text-xs uppercase tracking-widest text-white/50">
+              <Icon name="calendar" size={14} />
+              This week's leaderboard
             </p>
             <div className="space-y-1.5">
               {weekly.map((w, i) => (
@@ -169,8 +172,14 @@ export function GameOverScreen({
         )}
 
         <div className="mt-8 flex justify-center gap-3">
-          <Btn variant="ghost" onClick={onHome}>🏠 Home</Btn>
-          <Btn size="lg" onClick={onReplay}>🔄 Rematch</Btn>
+          <Btn variant="ghost" onClick={onHome}>
+            <Icon name="home" size={16} />
+            Home
+          </Btn>
+          <Btn size="lg" onClick={onReplay}>
+            <Icon name="refresh" size={17} />
+            Rematch
+          </Btn>
         </div>
       </div>
     </div>

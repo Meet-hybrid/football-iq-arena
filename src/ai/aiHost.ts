@@ -4,7 +4,6 @@
 // ---------------------------------------------------------------------------
 
 export const HOST_NAME = "Big Match Tunde";
-export const HOST_AVATAR = "🎙️";
 
 export type HostKey =
   | "welcome"
@@ -101,8 +100,8 @@ const LINES: Record<HostKey, string[]> = {
     "{name} has taken the lead! The crowd is loving this!",
   ],
   champion: [
-    "{name} IS YOUR FOOTBALL IQ ARENA CHAMPION! Give it up — what a performance! 🏆",
-    "The winner! {name}! Absolute scenes in the arena! 🏆",
+    "{name} IS YOUR FOOTBALL IQ ARENA CHAMPION! Give it up — what a performance!",
+    "The winner! {name}! Absolute scenes in the arena!",
   ],
   elimination: [
     "{name} is OUT! Sorry, mate — thanks for playing!",

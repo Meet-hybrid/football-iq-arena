@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { Avatar, Btn, Glass } from "../components/ui";
+import { Avatar, Btn, Glass, Icon, avatarRingFor } from "../components/ui";
 import type { GameState } from "../types";
 import type { Dispatch } from "react";
 import { play } from "../audio/sound";
@@ -27,9 +27,10 @@ export function ScoreboardScreen({
         <motion.h2
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-6 text-center font-display text-2xl text-gold-300"
+          className="mb-6 flex items-center justify-center gap-2 text-center font-display text-2xl text-gold-300"
         >
-          {state.gameEnding ? "🏁 Final Standings" : "📊 Scoreboard"}
+          <Icon name={state.gameEnding ? "flag" : "chart"} size={24} />
+          {state.gameEnding ? "Final Standings" : "Scoreboard"}
         </motion.h2>
 
         {tournament && state.bracket && (
@@ -48,18 +49,23 @@ export function ScoreboardScreen({
                     className={`glass rounded-xl px-3 py-2 text-center text-sm ${active ? "ring-2 ring-gold-400" : m.winnerId ? "opacity-70" : "opacity-40"}`}
                   >
                     <div className="flex items-center gap-2">
-                      <span>{p1?.avatar}</span>
+                      <Avatar name={p1?.name ?? "?"} size={22} ring={avatarRingFor(p1?.avatar, 0)} />
                       <span className={m.winnerId === m.p1Id ? "font-bold text-gold-300" : "text-white/80"}>{p1?.name}</span>
                       <span className="font-score text-lg text-white/60">{m.scores[m.p1Id] ?? 0}</span>
                     </div>
                     {p2 && m.p2Id && (
                       <div className="mt-1 flex items-center gap-2">
-                        <span>{p2.avatar}</span>
+                        <Avatar name={p2.name} size={22} ring={avatarRingFor(p2.avatar, 1)} />
                         <span className={m.winnerId === m.p2Id ? "font-bold text-gold-300" : "text-white/80"}>{p2.name}</span>
                         <span className="font-score text-lg text-white/60">{m.scores[m.p2Id] ?? 0}</span>
                       </div>
                     )}
-                    {m.winnerId && <div className="mt-1 text-[10px] font-bold text-emerald-400">🏆 ADVANCES</div>}
+                    {m.winnerId && (
+                      <div className="mt-1 flex items-center justify-center gap-1 text-[10px] font-bold text-emerald-400">
+                        <Icon name="trophy" size={11} />
+                        ADVANCES
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -78,7 +84,7 @@ export function ScoreboardScreen({
               className={`flex items-center gap-3 rounded-xl px-3 py-3 ${i === 0 ? "bg-gold-400/10" : ""}`}
             >
               <span className={`font-score w-8 text-2xl ${i === 0 ? "text-gold-300" : "text-white/40"}`}>{i + 1}</span>
-              <Avatar emoji={p.avatar} size={40} ring={i} />
+              <Avatar name={p.name} size={40} ring={avatarRingFor(p.avatar, i)} />
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-bold">
                   {p.name}
@@ -86,7 +92,12 @@ export function ScoreboardScreen({
                     <span className="ml-1 text-[10px] font-normal text-white/40">({p.members?.length} players)</span>
                   )}
                 </div>
-                {p.streak >= 2 && <div className="text-[10px] text-orange-300">🔥 {p.streak} in a row</div>}
+                {p.streak >= 2 && (
+                  <div className="flex items-center gap-1 text-[10px] text-orange-300">
+                    <Icon name="flame" size={11} />
+                    {p.streak} in a row
+                  </div>
+                )}
               </div>
               <AnimatePresence>
                 {(state.delta[p.id] ?? 0) > 0 && (
@@ -122,11 +133,22 @@ export function ScoreboardScreen({
         <div className="mt-6 flex justify-center gap-3">
           {state.config.mode === "party" && !state.gameEnding && (
             <Btn variant="ghost" onClick={() => { play("fanfare"); dispatch({ type: "END_GAME" }); }}>
-              🏁 End game now
+              <Icon name="flag" size={15} />
+              End game now
             </Btn>
           )}
           <Btn size="lg" onClick={() => { play("whistle"); dispatch({ type: "NEXT_TURN" }); }}>
-            {state.gameEnding ? "See Results 🏆" : "Continue →"}
+            {state.gameEnding ? (
+              <>
+                <Icon name="trophy" size={18} />
+                See Results
+              </>
+            ) : (
+              <>
+                Continue
+                <Icon name="arrow-right" size={16} />
+              </>
+            )}
           </Btn>
         </div>
       </div>
