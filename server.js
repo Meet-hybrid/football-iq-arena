@@ -16,9 +16,23 @@ import { fileURLToPath } from "node:url";
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const PORT = Number(process.env.PORT || 8787);
 const DIST = join(__dirname, "dist");
-const API_KEY = process.env.OPENAI_API_KEY || "";
-const MODEL = process.env.OPENAI_MODEL || "gpt-5-mini";
-const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
+
+// --- AI provider config ----------------------------------------------------
+// AI_PROVIDER = openai (default) | groq | gemini
+//   openai: needs OPENAI_API_KEY  (pay-per-token)
+//   groq:   needs GROQ_API_KEY    (free tier, no card — ~14.4k requests/day)
+//   gemini: needs GEMINI_API_KEY  (free tier, no card — ~1.5k requests/day)
+const PROVIDER = (process.env.AI_PROVIDER || "openai").toLowerCase();
+const API_KEY =
+  process.env[
+    PROVIDER === "groq" ? "GROQ_API_KEY" : PROVIDER === "gemini" ? "GEMINI_API_KEY" : "OPENAI_API_KEY"
+  ] || "";
+const DEFAULT_MODELS = {
+  openai: "gpt-5-mini",
+  groq: "llama-3.3-70b-versatile",
+  gemini: "gemini-2.5-flash",
+};
+const MODEL = process.env.AI_MODEL || DEFAULT_MODELS[PROVIDER] || "gpt-5-mini";
 
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -34,10 +48,10 @@ const MIME = {
 };
 
 // ---------------------------------------------------------------------------
-// OpenAI helper
+// LLM helpers — one abstraction across OpenAI / Groq / Gemini
 // ---------------------------------------------------------------------------
 
-async function openaiComplete(messages, { json = false, maxTokens = 700, temperature = 0.4 } = {}) {
+async function openaiStyleComplete(endpoint, messages, { json, maxTokens, temperature }) {
   const body = {
     model: MODEL,
     messages,
@@ -45,7 +59,7 @@ async function openaiComplete(messages, { json = false, maxTokens = 700, tempera
     max_tokens: maxTokens,
     ...(json ? { response_format: { type: "json_object" } } : {}),
   };
-  const res = await fetch(OPENAI_URL, {
+  const res = await fetch(endpoint, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -55,10 +69,56 @@ async function openaiComplete(messages, { json = false, maxTokens = 700, tempera
   });
   if (!res.ok) {
     const text = await res.text().catch(() => "");
-    throw new Error(`OpenAI ${res.status}: ${text.slice(0, 200)}`);
+    throw new Error(`${PROVIDER} ${res.status}: ${text.slice(0, 200)}`);
   }
   const data = await res.json();
   return data.choices?.[0]?.message?.content ?? "";
+}
+
+async function geminiComplete(messages, { json, maxTokens, temperature }) {
+  const system = messages.find((m) => m.role === "system")?.content ?? "";
+  const user = messages.filter((m) => m.role === "user").map((m) => m.content).join("\n\n");
+  const body = {
+    system_instruction: system ? { parts: [{ text: system }] } : undefined,
+    contents: [{ role: "user", parts: [{ text: user }] }],
+    generationConfig: {
+      temperature,
+      maxOutputTokens: maxTokens,
+      ...(json ? { responseMimeType: "application/json" } : {}),
+    },
+  };
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${encodeURIComponent(API_KEY)}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }
+  );
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`gemini ${res.status}: ${text.slice(0, 200)}`);
+  }
+  const data = await res.json();
+  return data.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ?? "";
+}
+
+async function modelComplete(messages, { json = false, maxTokens = 700, temperature = 0.4 } = {}) {
+  if (PROVIDER === "groq") {
+    return openaiStyleComplete("https://api.groq.com/openai/v1/chat/completions", messages, {
+      json,
+      maxTokens,
+      temperature,
+    });
+  }
+  if (PROVIDER === "gemini") {
+    return geminiComplete(messages, { json, maxTokens, temperature });
+  }
+  return openaiStyleComplete("https://api.openai.com/v1/chat/completions", messages, {
+    json,
+    maxTokens,
+    temperature,
+  });
 }
 
 function parseJson(content) {
@@ -92,7 +152,7 @@ Decide if the answer is correct. Accept common spelling variations, nicknames, p
 Reply with ONLY JSON, no commentary:
 {"correct": boolean, "display": "one short TV-host-style sentence", "matched": "the canonical answer matched, or null"}`;
 
-  const content = await openaiComplete(
+  const content = await modelComplete(
     [
       { role: "system", content: "You judge football trivia answers. Output JSON only." },
       { role: "user", content: prompt },
@@ -124,7 +184,7 @@ Rules:
 Reply with ONLY JSON:
 {"prompt": "the question text", "sub": "optional second line or null", "answer": ["one canonical answer"], "aliases": ["common alternate spellings/nicknames"], "explanation": "short fun fact", "hint": "optional clue or null"}`;
 
-  const content = await openaiComplete(
+  const content = await modelComplete(
     [
       { role: "system", content: "You write accurate football trivia questions. Output JSON only." },
       { role: "user", content: prompt },
@@ -179,11 +239,15 @@ const server = createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
 
   if (url.pathname === "/api/health") {
-    return sendJson(res, 200, { ok: true, ai: Boolean(API_KEY), model: MODEL });
+    return sendJson(res, 200, { ok: true, provider: PROVIDER, ai: Boolean(API_KEY), model: MODEL });
   }
 
   if (url.pathname === "/api/ai" && req.method === "POST") {
-    if (!API_KEY) return sendJson(res, 503, { error: "OPENAI_API_KEY not set on the server" });
+    if (!API_KEY) {
+      return sendJson(res, 503, {
+        error: `No API key for provider '${PROVIDER}' — set ${PROVIDER === "groq" ? "GROQ_API_KEY" : PROVIDER === "gemini" ? "GEMINI_API_KEY" : "OPENAI_API_KEY"} in .env`,
+      });
+    }
     let payload;
     try {
       payload = JSON.parse(await readBody(req));
@@ -242,5 +306,5 @@ server.on("error", (err) => {
 
 server.listen(PORT, () => {
   console.log(`⚽ Football IQ Arena serving on http://localhost:${PORT}`);
-  console.log(`   AI: ${API_KEY ? `enabled (model: ${MODEL})` : "DISABLED — set OPENAI_API_KEY in .env"}`);
+  console.log(`   AI provider: ${PROVIDER} · model: ${MODEL} · ${API_KEY ? "enabled" : `DISABLED — set ${PROVIDER === "groq" ? "GROQ_API_KEY" : PROVIDER === "gemini" ? "GEMINI_API_KEY" : "OPENAI_API_KEY"} in .env`}`);
 });
