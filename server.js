@@ -147,7 +147,19 @@ CORRECT ANSWERS: ${answers || "(host judges list answers)"}
 ALREADY ACCEPTED NAMES: ${saidList}
 PLAYER SAID: "${text}"
 
-Decide if the answer is correct. Accept common spelling variations, nicknames, partial names and translations (e.g. "CR7" for Cristiano Ronaldo). For list/timed questions, the answer only counts if it is a NEW valid entry not already accepted. For true/false questions the player must say true/false (or equivalents).
+HARD RULES:
+- Accept the answer ONLY if it clearly matches one of the CORRECT ANSWERS, or a common spelling/nickname/partial name of it (e.g. "CR7" for Cristiano Ronaldo, "Madird" for Madrid).
+- NEVER accept an unrelated answer (a different club, player, country, or year).
+- If the answer is a different but plausible-sounding entity, it is WRONG.
+- If you are not confident, correct MUST be false.
+- For list/timed questions, the answer only counts if it is a NEW valid entry not already accepted.
+- For true/false questions, the player must say true/false (or equivalents like correct/wrong).
+
+EXAMPLES:
+QUESTION: Which club paid a record fee for Ronaldo in 2009? ANSWERS: Real Madrid
+"Real Madird" -> {"correct": true}
+"Barcelona" -> {"correct": false}
+"Arsenal" -> {"correct": false}
 
 Reply with ONLY JSON, no commentary:
 {"correct": boolean, "display": "one short TV-host-style sentence", "matched": "the canonical answer matched, or null"}`;
@@ -259,7 +271,7 @@ const server = createServer(async (req, res) => {
       return sendJson(res, 200, data);
     } catch (e) {
       console.error("[api/ai]", e.message);
-      return sendJson(res, 502, { error: e.message || "AI upstream error" });
+      return sendJson(res, e.status || 502, { error: e.message || "AI upstream error" });
     }
   }
 

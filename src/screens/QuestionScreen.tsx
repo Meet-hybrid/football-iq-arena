@@ -160,7 +160,10 @@ export function QuestionScreen({
   async function doCheck(raw?: string) {
     if (!q || state.status !== "ask" || checking) return;
     const text = (raw ?? checkText).trim();
-    if (!text) return;
+    if (!text) {
+      setVerdict({ ok: false, matched: null, display: "Type or say an answer first!", confidence: "none" });
+      return;
+    }
     setChecking(true);
     try {
       if (timed) {
@@ -327,17 +330,22 @@ export function QuestionScreen({
           <AnimatePresence mode="wait">
             {state.status === "ask" && !timed && (
               <motion.div key="ask" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <Btn variant="success" size="lg" onClick={() => dispatch({ type: "MARK_ANSWER", correct: true })}>
-                    ✓ Correct
-                  </Btn>
-                  <Btn variant="danger" size="lg" onClick={() => dispatch({ type: "MARK_ANSWER", correct: false })}>
-                    ✗ Wrong
-                  </Btn>
+                <div>
+                  <div className="mb-2 text-center text-[11px] uppercase tracking-widest text-white/40">
+                    🎙️ Host verdict — tap after the player answers aloud
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Btn variant="success" size="lg" onClick={() => dispatch({ type: "MARK_ANSWER", correct: true })}>
+                      ✓ Correct
+                    </Btn>
+                    <Btn variant="danger" size="lg" onClick={() => dispatch({ type: "MARK_ANSWER", correct: false })}>
+                      ✗ Wrong
+                    </Btn>
+                  </div>
                 </div>
                 <div className="glass rounded-xl p-3">
                   <div className="mb-1.5 text-[11px] uppercase tracking-widest text-white/40">
-                    AI answer check — type what the player said
+                    🤖 AI answer check — type or say the answer, AI judges it
                   </div>
                   <div className="flex gap-2">
                     <input
