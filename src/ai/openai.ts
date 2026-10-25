@@ -2,7 +2,7 @@ import type { CategoryId, Difficulty, Question } from "../types";
 import { checkAnswer, type CheckResult } from "./verify";
 
 // ---------------------------------------------------------------------------
-// Live AI — talks to our own server-side proxy (/api/ai), so the OpenAI key
+// Live AI — talks to our own server-side proxy (/api/ai), so the provider key
 // never reaches the browser. Falls back to the local simulation whenever the
 // proxy is unreachable, the key is missing, or the feature is toggled off.
 // ---------------------------------------------------------------------------

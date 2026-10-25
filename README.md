@@ -50,7 +50,7 @@ choose one provider in `.env` (already gitignored):
 | Provider | Cost | Key at | Free tier (no card) |
 |---|---|---|---|
 | `claude` (recommended) | pay-per-token | [console.anthropic.com](https://console.anthropic.com) | depends on account |
-| `openai` (default) | pay-per-token | [platform.openai.com](https://platform.openai.com) | needs prepaid credit |
+| `openai` | pay-per-token | [platform.openai.com](https://platform.openai.com) | needs prepaid credit |
 | `groq` | **FREE** | [console.groq.com/keys](https://console.groq.com/keys) | ~14,400 requests/day |
 | `gemini` | **FREE** | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) | ~1,500 requests/day |
 

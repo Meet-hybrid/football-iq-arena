@@ -22,7 +22,7 @@ const DIST = join(__dirname, "dist");
 //   openai: needs OPENAI_API_KEY  (pay-per-token)
 //   groq:   needs GROQ_API_KEY    (free tier, no card — ~14.4k requests/day)
 //   gemini: needs GEMINI_API_KEY  (free tier, no card — ~1.5k requests/day)
-const PROVIDER = (process.env.AI_PROVIDER || "openai").toLowerCase();
+const PROVIDER = (process.env.AI_PROVIDER || "claude").toLowerCase();
 const API_KEY =
   process.env[
     PROVIDER === "claude"

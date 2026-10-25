@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Btn, Chip, Icon, Toggle, Wordmark } from "../components/ui";
 import { play } from "../audio/sound";
@@ -19,6 +19,15 @@ export function HomeScreen({
   onStats: () => void;
 }) {
   const [liveAi, setLiveAi] = useState(aiEnabled());
+  const [provider, setProvider] = useState("AI");
+  useEffect(() => {
+    fetch("/api/health")
+      .then((response) => response.json())
+      .then((data) => {
+        if (typeof data.provider === "string") setProvider(`${data.provider.charAt(0).toUpperCase()}${data.provider.slice(1)} AI`);
+      })
+      .catch(() => undefined);
+  }, []);
   return (
     <div className="pitch-bg relative min-h-full overflow-hidden">
       <div className="relative mx-auto flex min-h-full max-w-3xl flex-col items-center justify-center gap-8 px-5 py-10">
@@ -87,7 +96,7 @@ export function HomeScreen({
           </span>
           <span className="flex items-center gap-2">
             <Icon name="sparkles" size={16} className="text-white/60" />
-            Live AI
+            {provider}
             <Toggle on={liveAi} onChange={(v) => { setLiveAi(v); setAIEnabled(v); }} />
           </span>
         </motion.div>
