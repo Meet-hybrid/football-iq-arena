@@ -29,8 +29,7 @@ verbally, steal points, and climb the leaderboard.
 - Tailwind CSS v4
 - Framer Motion
 - Web Speech API (TTS/STT) · Web Audio API (SFX)
-- Zero backend — the "AI" is a local simulation module
-  (`src/ai/`) designed to be swapped for real OpenAI calls later
+- Node 22 server-side AI proxy keeps provider keys out of the browser
 
 ## Getting started
 
@@ -50,9 +49,17 @@ choose one provider in `.env` (already gitignored):
 
 | Provider | Cost | Key at | Free tier (no card) |
 |---|---|---|---|
+| `claude` (recommended) | pay-per-token | [console.anthropic.com](https://console.anthropic.com) | depends on account |
 | `openai` (default) | pay-per-token | [platform.openai.com](https://platform.openai.com) | needs prepaid credit |
 | `groq` | **FREE** | [console.groq.com/keys](https://console.groq.com/keys) | ~14,400 requests/day |
 | `gemini` | **FREE** | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) | ~1,500 requests/day |
+
+Example for Claude:
+```
+AI_PROVIDER=claude
+ANTHROPIC_API_KEY=sk-ant-your-key
+AI_MODEL=claude-sonnet-4-6
+```
 
 Example for the free Groq tier:
 ```

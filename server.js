@@ -1,7 +1,7 @@
 // Football IQ Arena — tiny Node server.
 //
 //   - Serves the built frontend from /dist (production)
-//   - POST /api/ai  -> proxies to OpenAI with your server-side key
+//   - POST /api/ai  -> proxies to the selected LLM with your server-side key
 //
 // The OpenAI key lives ONLY here (process.env.OPENAI_API_KEY), never in the
 // browser. Run with:  npm run build && npm run serve
@@ -18,16 +18,23 @@ const PORT = Number(process.env.PORT || 8787);
 const DIST = join(__dirname, "dist");
 
 // --- AI provider config ----------------------------------------------------
-// AI_PROVIDER = openai (default) | groq | gemini
+// AI_PROVIDER = claude (default) | openai | groq | gemini
 //   openai: needs OPENAI_API_KEY  (pay-per-token)
 //   groq:   needs GROQ_API_KEY    (free tier, no card — ~14.4k requests/day)
 //   gemini: needs GEMINI_API_KEY  (free tier, no card — ~1.5k requests/day)
 const PROVIDER = (process.env.AI_PROVIDER || "openai").toLowerCase();
 const API_KEY =
   process.env[
-    PROVIDER === "groq" ? "GROQ_API_KEY" : PROVIDER === "gemini" ? "GEMINI_API_KEY" : "OPENAI_API_KEY"
+    PROVIDER === "claude"
+      ? "ANTHROPIC_API_KEY"
+      : PROVIDER === "groq"
+        ? "GROQ_API_KEY"
+        : PROVIDER === "gemini"
+          ? "GEMINI_API_KEY"
+          : "OPENAI_API_KEY"
   ] || "";
 const DEFAULT_MODELS = {
+  claude: "claude-sonnet-4-6",
   openai: "gpt-5-mini",
   groq: "llama-3.3-70b-versatile",
   gemini: "gemini-2.5-flash",
@@ -103,7 +110,30 @@ async function geminiComplete(messages, { json, maxTokens, temperature }) {
   return data.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ?? "";
 }
 
+async function claudeComplete(messages, { maxTokens, temperature }) {
+  const system = messages.find((m) => m.role === "system")?.content ?? "";
+  const body = {
+    model: MODEL,
+    max_tokens: maxTokens,
+    temperature,
+    ...(system ? { system } : {}),
+    messages: messages.filter((m) => m.role !== "system").map((m) => ({ role: m.role, content: m.content })),
+  };
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-api-key": API_KEY, "anthropic-version": "2023-06-01" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`claude ${res.status}: ${text.slice(0, 200)}`);
+  }
+  const data = await res.json();
+  return data.content?.filter((block) => block.type === "text").map((block) => block.text).join("") ?? "";
+}
+
 async function modelComplete(messages, { json = false, maxTokens = 700, temperature = 0.4 } = {}) {
+  if (PROVIDER === "claude") return claudeComplete(messages, { maxTokens, temperature });
   if (PROVIDER === "groq") {
     return openaiStyleComplete("https://api.groq.com/openai/v1/chat/completions", messages, {
       json,
@@ -257,7 +287,7 @@ const server = createServer(async (req, res) => {
   if (url.pathname === "/api/ai" && req.method === "POST") {
     if (!API_KEY) {
       return sendJson(res, 503, {
-        error: `No API key for provider '${PROVIDER}' — set ${PROVIDER === "groq" ? "GROQ_API_KEY" : PROVIDER === "gemini" ? "GEMINI_API_KEY" : "OPENAI_API_KEY"} in .env`,
+        error: `No API key for provider '${PROVIDER}' — set ${PROVIDER === "claude" ? "ANTHROPIC_API_KEY" : PROVIDER === "groq" ? "GROQ_API_KEY" : PROVIDER === "gemini" ? "GEMINI_API_KEY" : "OPENAI_API_KEY"} in .env`,
       });
     }
     let payload;
@@ -318,5 +348,5 @@ server.on("error", (err) => {
 
 server.listen(PORT, () => {
   console.log(`⚽ Football IQ Arena serving on http://localhost:${PORT}`);
-  console.log(`   AI provider: ${PROVIDER} · model: ${MODEL} · ${API_KEY ? "enabled" : `DISABLED — set ${PROVIDER === "groq" ? "GROQ_API_KEY" : PROVIDER === "gemini" ? "GEMINI_API_KEY" : "OPENAI_API_KEY"} in .env`}`);
+  console.log(`   AI provider: ${PROVIDER} · model: ${MODEL} · ${API_KEY ? "enabled" : `DISABLED — set ${PROVIDER === "claude" ? "ANTHROPIC_API_KEY" : PROVIDER === "groq" ? "GROQ_API_KEY" : PROVIDER === "gemini" ? "GEMINI_API_KEY" : "OPENAI_API_KEY"} in .env`}`);
 });

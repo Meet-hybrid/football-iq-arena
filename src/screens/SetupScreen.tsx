@@ -132,13 +132,25 @@ export function SetupScreen({
                       key={t}
                       onClick={() => {
                         play("pop");
-                        setTeamMode(t === "team");
+                        const enabled = t === "team";
+                        setTeamMode(enabled);
+                        if (enabled) {
+                          setTeamCount(2);
+                          setPlayers((ps) => ps.length >= 4 ? ps : [
+                            ...ps,
+                            ...Array.from({ length: 4 - ps.length }, (_, j) => ({
+                              name: "",
+                              avatar: String((ps.length + j) % AVATAR_COUNT),
+                              team: (ps.length + j) % 2,
+                            })),
+                          ]);
+                        }
                       }}
                       className={`rounded-lg px-4 py-1.5 text-sm font-semibold transition ${
                         (t === "team") === teamMode ? "bg-gold-500 text-pitch-950" : "text-white/70"
                       }`}
                     >
-                      {t === "solo" ? "Individual" : "Team Mode"}
+                      {t === "solo" ? "Individual" : "2v2 / Team Mode"}
                     </button>
                   ))}
                 </div>
