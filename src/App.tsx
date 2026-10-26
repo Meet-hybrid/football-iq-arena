@@ -18,6 +18,7 @@ const StatsScreen = lazy(() => import("./screens/StatsScreen").then((m) => ({ de
 const DailyChallengeScreen = lazy(() => import("./screens/DailyChallengeScreen").then((m) => ({ default: m.DailyChallengeScreen })));
 const OnlineScreen = lazy(() => import("./screens/OnlineScreen").then((m) => ({ default: m.OnlineScreen })));
 const CameraFairPlay = lazy(() => import("./multiplayer/CameraFairPlay").then((m) => ({ default: m.CameraFairPlay })));
+const ChatPanel = lazy(() => import("./multiplayer/ChatPanel").then((m) => ({ default: m.ChatPanel })));
 
 type Ui = "home" | "setup" | "game" | "stats" | "daily" | "online";
 
@@ -169,6 +170,7 @@ export default function App() {
         {onlineSession && ui === "game" && (
           <CameraFairPlay onSignal={(message) => setFairPlayMessage(message)} />
         )}
+        {onlineSession && ui === "game" && <ChatPanel session={onlineSession} />}
         {fairPlayMessage && (
           <div role="status" aria-live="polite" className="fixed bottom-4 left-1/2 z-50 -translate-x-1/2 rounded-xl border border-yellow-400/30 bg-pitch-950/95 px-4 py-3 text-center text-xs text-yellow-200 shadow-2xl">
             {fairPlayMessage}
