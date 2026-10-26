@@ -167,6 +167,7 @@ export interface GameState {
 }
 
 export type Action =
+  | { type: "SYNC_STATE"; state: GameState }
   | { type: "START_GAME"; config: GameConfig; players: Player[]; pools: Record<CategoryId, Question[]> }
   | { type: "PICK_CATEGORY"; id: CategoryId }
   | { type: "PICK_NUMBER"; n: number }

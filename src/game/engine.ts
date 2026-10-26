@@ -226,6 +226,9 @@ export function gameReducer(state: GameState, action: Action): GameState {
   };
 
   switch (action.type) {
+    case "SYNC_STATE":
+      return action.state;
+
     case "START_GAME": {
       const players: Record<string, Player> = {};
       for (const p of action.players) players[p.id] = { ...p };

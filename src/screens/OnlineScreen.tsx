@@ -1,9 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Btn, Chip, Glass, Icon, Wordmark } from "../components/ui";
-import { createRoom, joinRoom, refreshRoom, startRoom, type RoomSession } from "../multiplayer/rooms";
+import { createRoom, joinRoom, getRoomState, publishRoomState, startRoom, type RoomSession } from "../multiplayer/rooms";
+import { buildPools, createPlayer, DEFAULT_RULES, gameReducer, initialState } from "../game/engine";
+import type { GameConfig, GameState } from "../types";
 import { play } from "../audio/sound";
 
-export function OnlineScreen({ onBack }: { onBack: () => void }) {
+export function OnlineScreen({ onBack, onGameReady }: { onBack: () => void; onGameReady: (session: RoomSession, state: GameState) => void }) {
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [session, setSession] = useState<RoomSession | null>(() => {
@@ -16,6 +18,7 @@ export function OnlineScreen({ onBack }: { onBack: () => void }) {
   });
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const readySent = useRef(false);
 
   useEffect(() => {
     if (!session) return;
@@ -26,14 +29,18 @@ export function OnlineScreen({ onBack }: { onBack: () => void }) {
     if (!session) return;
     const timer = window.setInterval(async () => {
       try {
-        const room = await refreshRoom(session.code);
+        const room = await getRoomState(session.code);
         setSession((current) => current ? { ...current, ...room } : current);
+        if (room.started && room.state && !readySent.current) {
+          readySent.current = true;
+          onGameReady(session, room.state);
+        }
       } catch (e) {
         setError(e instanceof Error ? e.message : "Room connection lost.");
       }
     }, 2000);
     return () => window.clearInterval(timer);
-  }, [session?.code]);
+  }, [session?.code, onGameReady]);
 
   async function enterRoom(action: () => Promise<RoomSession>) {
     const cleanName = name.trim();
@@ -62,8 +69,21 @@ export function OnlineScreen({ onBack }: { onBack: () => void }) {
   async function beginMatch() {
     if (!session || !session.isHost) return;
     try {
+      const players = session.players.map((player, index) => createPlayer(player.id, player.name, String(index)));
+      const config: GameConfig = {
+        mode: "classic",
+        difficulty: "medium",
+        rounds: 3,
+        rules: { ...DEFAULT_RULES },
+        order: players.map((player) => player.id),
+      };
+      const state = gameReducer(initialState(), { type: "START_GAME", config, players, pools: buildPools(config.difficulty) });
+      await publishRoomState(session, state);
       const room = await startRoom(session);
-      setSession((current) => current ? { ...current, ...room } : current);
+      const nextSession = { ...session, ...room };
+      readySent.current = true;
+      setSession(nextSession);
+      onGameReady(nextSession, state);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not start the room.");
     }

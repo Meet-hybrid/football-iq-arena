@@ -3,6 +3,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import { gameReducer, initialState, buildPools } from "./game/engine";
 import { setSoundEnabled } from "./audio/sound";
 import type { GameConfig, Player } from "./types";
+import type { RoomSession } from "./multiplayer/rooms";
+import { getRoomState, publishRoomState } from "./multiplayer/rooms";
 
 const HomeScreen = lazy(() => import("./screens/HomeScreen").then((m) => ({ default: m.HomeScreen })));
 const SetupScreen = lazy(() => import("./screens/SetupScreen").then((m) => ({ default: m.SetupScreen })));
@@ -19,7 +21,8 @@ type Ui = "home" | "setup" | "game" | "stats" | "daily" | "online";
 
 export default function App() {
   const [state, dispatch] = useReducer(gameReducer, undefined, initialState);
-  const [ui, setUi] = useState<Ui>("home");
+  const [ui, setUi] = useState<Ui>(() => localStorage.getItem("fia-room-session") ? "online" : "home");
+  const [onlineSession, setOnlineSession] = useState<RoomSession | null>(null);
   const [sound, setSound] = useState(() => localStorage.getItem("fia-sound") !== "off");
   const [tts] = useState(() => localStorage.getItem("fia-tts") !== "off");
 
@@ -31,6 +34,23 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem("fia-tts", tts ? "on" : "off");
   }, [tts]);
+
+  useEffect(() => {
+    if (!onlineSession) return;
+    if (onlineSession.isHost) {
+      if (state.phase !== "home" && state.config) void publishRoomState(onlineSession, state);
+      return;
+    }
+    const timer = window.setInterval(async () => {
+      try {
+        const room = await getRoomState(onlineSession.code);
+        if (room.state) dispatch({ type: "SYNC_STATE", state: room.state });
+      } catch {
+        // The room UI reports connection errors; the game stays on the last state.
+      }
+    }, 1200);
+    return () => window.clearInterval(timer);
+  }, [onlineSession, state]);
 
   function startGame(config: GameConfig, players: Player[]) {
     const pools = buildPools(config.difficulty);
@@ -57,7 +77,11 @@ export default function App() {
   } else if (ui === "daily") {
     screen = <DailyChallengeScreen onBack={() => setUi("home")} />;
   } else if (ui === "online") {
-    screen = <OnlineScreen onBack={() => setUi("home")} />;
+    screen = <OnlineScreen onBack={() => setUi("home")} onGameReady={(session, nextState) => {
+      setOnlineSession(session);
+      dispatch({ type: "SYNC_STATE", state: nextState });
+      setUi("game");
+    }} />;
   } else {
     switch (state.phase) {
       case "category":

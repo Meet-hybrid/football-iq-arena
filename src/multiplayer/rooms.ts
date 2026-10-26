@@ -57,5 +57,5 @@ export function publishRoomState(session: RoomSession, state: unknown) {
 }
 
 export function getRoomState(code: string) {
-  return request<RoomInfo & { state: unknown }>(`/api/rooms/${code}/state`);
+  return request<RoomInfo & { state: import("../types").GameState | null }>(`/api/rooms/${code}/state`);
 }
