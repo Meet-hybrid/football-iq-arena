@@ -54,6 +54,7 @@ export const MODES: {
   blurb: string;
   roundsDefault: number;
 }[] = [
+  { id: "solo", name: "Solo Knowledge", emoji: "🧠", blurb: "Play alone and review every answer", roundsDefault: 20 },
   { id: "classic", name: "Classic", emoji: "🎯", blurb: "Fixed rounds, highest score wins", roundsDefault: 3 },
   { id: "sudden", name: "Sudden Death", emoji: "💀", blurb: "One wrong answer and you're out", roundsDefault: 0 },
   { id: "timeattack", name: "Time Attack", emoji: "⏱️", blurb: "Beat the clock on every question", roundsDefault: 3 },

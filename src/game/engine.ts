@@ -71,6 +71,7 @@ export function initialState(): GameState {
     log: [],
     timedBank: [],
     timedCorrectCount: 0,
+    review: [],
     bracket: null,
     matchIndex: 0,
     winnerId: null,
@@ -93,6 +94,22 @@ export function buildPools(difficulty: GameConfig["difficulty"]): Record<Categor
 
 function pushLog(s: GameState, playerId: string, delta: number, text: string) {
   s.log = [...s.log, { id: ++s.logCounter, playerId, delta, text }].slice(-60);
+}
+
+function recordReview(s: GameState, answer: string | undefined, correct: boolean) {
+  if (s.config.mode !== "solo" || !s.question) return;
+  s.review = [
+    ...s.review,
+    {
+      questionId: s.question.id,
+      category: s.question.category,
+      prompt: s.question.prompt,
+      sub: s.question.sub,
+      playerAnswer: answer?.trim() || "No answer",
+      correctAnswers: [...s.question.answer],
+      correct,
+    },
+  ];
 }
 
 function bump(p: Player, amount: number) {
@@ -140,6 +157,7 @@ export function activeOrder(s: GameState): string[] {
 function stealAvailable(s: GameState): boolean {
   const q = s.question;
   if (!q || q.type === "timed") return false;
+  if (s.config.mode === "solo") return false;
   if (s.config.mode === "sudden") return false;
   if (!s.config.rules.stealEnabled) return false;
   if (s.stealAttempts >= s.config.rules.maxSteals) return false;
@@ -229,6 +247,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
         winnerId: null,
         eliminations: [],
         log: [],
+        review: [],
         logCounter: 0,
         bracket: cfg.mode === "tournament" ? buildInitialBracket(cfg.order) : null,
         matchIndex: 0,
@@ -308,6 +327,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
       const pid = s.turnPlayerId;
       const p = s.players[pid];
       const q = s.question;
+      recordReview(s, action.answer, action.correct);
       if (action.correct) {
         const value = s.config.rules.questionValue;
         bump(p, value);
@@ -397,6 +417,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
       }
       s.delta = { [pid]: value };
       s.lastOutcome = "timed";
+      recordReview(s, s.timedBank.join(", "), count > 0);
       pushLog(s, pid, value, `Timed challenge — ${count} names (+${value})`);
       s.status = "resolved";
       return s;
@@ -557,7 +578,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
         s.phase = "gameover";
         return s;
       }
-      const capped = ["classic", "timeattack", "league", "randommix", "party"].includes(s.config.mode);
+      const capped = ["solo", "classic", "timeattack", "league", "randommix", "party"].includes(s.config.mode);
       if (capped && s.config.rounds > 0 && s.roundIndex >= s.config.rounds) {
         s.phase = "gameover";
         return s;

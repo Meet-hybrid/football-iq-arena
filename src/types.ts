@@ -1,6 +1,7 @@
 // Core domain types for Football IQ Arena
 
 export type GameModeId =
+  | "solo"
   | "classic"
   | "sudden"
   | "timeattack"
@@ -90,6 +91,16 @@ export interface GameConfig {
   order: string[];
 }
 
+export interface ReviewEntry {
+  questionId: string;
+  category: CategoryId;
+  prompt: string;
+  sub?: string;
+  playerAnswer: string;
+  correctAnswers: string[];
+  correct: boolean;
+}
+
 export type Phase =
   | "home"
   | "setup"
@@ -142,6 +153,7 @@ export interface GameState {
   hintUsed: boolean;
   delta: Record<string, number>;
   log: LogEntry[];
+  review: ReviewEntry[];
   timedBank: string[];
   timedCorrectCount: number;
   bracket: BracketMatch[] | null;
@@ -159,13 +171,13 @@ export type Action =
   | { type: "PICK_CATEGORY"; id: CategoryId }
   | { type: "PICK_NUMBER"; n: number }
   | { type: "RANDOM_NUMBER" }
-  | { type: "MARK_ANSWER"; correct: boolean }
+  | { type: "MARK_ANSWER"; correct: boolean; answer?: string }
   | { type: "TIMEOUT" }
   | { type: "MARK_TIMED_ACCEPT"; name: string; canonical?: string }
   | { type: "TIMED_END" }
   | { type: "ADD_AI_QUESTION"; category: CategoryId; question: Question }
   | { type: "CHOOSE_STEALER"; id: string | null }
-  | { type: "MARK_STEAL"; correct: boolean }
+  | { type: "MARK_STEAL"; correct: boolean; answer?: string }
   | { type: "NEXT_TURN" }
   | { type: "END_GAME" }
   | { type: "RESET_GAME" };

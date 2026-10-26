@@ -185,13 +185,13 @@ export function QuestionScreen({
       if (answeringSteal) {
         setAiNote(res.display);
         if (sound) play(res.ok ? "steal" : "wrong");
-        dispatch({ type: "MARK_STEAL", correct: res.ok });
+        dispatch({ type: "MARK_STEAL", correct: res.ok, answer: text });
         return;
       }
-      if (q.type === "single" || q.type === "truefalse" || q.type === "thisorthat") {
+      if (q.type === "single" || q.type === "truefalse" || q.type === "thisorthat" || (state.config.mode === "solo" && q.type === "list")) {
         setAiNote(res.display);
         if (sound) (res.ok ? play("correct") : play("wrong"));
-        dispatch({ type: "MARK_ANSWER", correct: res.ok });
+        dispatch({ type: "MARK_ANSWER", correct: res.ok, answer: text });
       } else {
         if (sound) (res.ok ? play("coin") : play("wrong"));
       }

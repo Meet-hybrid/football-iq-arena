@@ -4,6 +4,7 @@ import { Avatar, Btn, Confetti, Glass, Icon, Stat, avatarRingFor } from "../comp
 import { winnersOf } from "../game/engine";
 import { finalizeGame, loadCareer, loadWeekly } from "../game/stats";
 import { ACHIEVEMENTS } from "../data/achievements";
+import { CATEGORY_MAP } from "../data/categories";
 import { hostLine } from "../ai/aiHost";
 import { play } from "../audio/sound";
 import type { GameState, Player } from "../types";
@@ -165,6 +166,31 @@ export function GameOverScreen({
                 <div key={i} className="flex items-center justify-between text-sm">
                   <span className="text-white/80">{i + 1}. {w.name}</span>
                   <span className="font-score text-lg text-gold-300">{w.points}</span>
+                </div>
+              ))}
+            </div>
+          </Glass>
+        )}
+
+        {state.config.mode === "solo" && state.review.length > 0 && (
+          <Glass className="mt-6 p-4 sm:p-5">
+            <p className="mb-3 flex items-center justify-center gap-1.5 text-center text-xs uppercase tracking-widest text-gold-300">
+              <Icon name="chart" size={14} />
+              Question review
+            </p>
+            <div className="space-y-3">
+              {state.review.map((entry, index) => (
+                <div key={`${entry.questionId}-${index}`} className={`rounded-xl border p-3 ${entry.correct ? "border-emerald-400/25 bg-emerald-400/5" : "border-flame-500/25 bg-flame-500/5"}`}>
+                  <div className="mb-1 flex items-center justify-between gap-3 text-[10px] uppercase tracking-widest text-white/45">
+                    <span>{index + 1}. {CATEGORY_MAP[entry.category]?.name ?? entry.category}</span>
+                    <span className={entry.correct ? "text-emerald-300" : "text-flame-400"}>{entry.correct ? "Correct" : "Wrong"}</span>
+                  </div>
+                  <p className="text-sm font-semibold text-white">{entry.prompt}</p>
+                  {entry.sub && <p className="mt-1 text-xs text-gold-300">{entry.sub}</p>}
+                  <div className="mt-2 grid gap-1 text-xs sm:grid-cols-2">
+                    <p className="text-white/70"><span className="text-white/40">Your answer:</span> {entry.playerAnswer}</p>
+                    <p className="text-white/80"><span className="text-white/40">Correct answer:</span> {entry.correctAnswers.join(" / ")}</p>
+                  </div>
                 </div>
               ))}
             </div>

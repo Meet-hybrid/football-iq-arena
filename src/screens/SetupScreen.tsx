@@ -10,6 +10,7 @@ const MAX_PLAYERS = 10;
 const MIN_PLAYERS = 2;
 
 const MODE_ICONS: Record<GameModeId, IconName> = {
+  solo: "target",
   classic: "target",
   sudden: "bolt",
   timeattack: "clock",
@@ -47,7 +48,8 @@ export function SetupScreen({
   const [showRules, setShowRules] = useState(false);
 
   const modeMeta = MODES.find((m) => m.id === mode)!;
-  const cappedModes = ["classic", "timeattack", "league", "randommix", "party"].includes(mode);
+  const soloMode = mode === "solo";
+  const cappedModes = ["solo", "classic", "timeattack", "league", "randommix", "party"].includes(mode);
   const knockoutish = mode === "knockout" || mode === "league";
   const roundsShown = mode === "tournament" ? false : cappedModes || knockoutish ? true : false;
 
@@ -73,9 +75,9 @@ export function SetupScreen({
     return true;
   }, [teamMode, teamCount, players]);
 
-  const canStart =
-    (teamMode ? teamCount >= 2 : validPlayers.length >= MIN_PLAYERS && validPlayers.length <= MAX_PLAYERS) &&
-    teamValid;
+  const canStart = soloMode
+    ? !teamMode && validPlayers.length === 1
+    : (teamMode ? teamCount >= 2 : validPlayers.length >= MIN_PLAYERS && validPlayers.length <= MAX_PLAYERS) && teamValid;
 
   function start() {
     if (!canStart) return;
@@ -216,7 +218,7 @@ export function SetupScreen({
                           ))}
                         </div>
                       )}
-                      {players.length > MIN_PLAYERS && (
+                      {players.length > (soloMode ? 1 : MIN_PLAYERS) && (
                         <button
                           onClick={() => setPlayers((ps) => ps.filter((_, j) => j !== i))}
                           className="px-2 text-white/40 hover:text-red-400"
@@ -243,7 +245,7 @@ export function SetupScreen({
                 <p className="mt-2 text-xs text-flame-500">
                   {teamMode
                     ? "Give every team at least one named player."
-                    : `Name at least ${MIN_PLAYERS} players to start.`}
+                    : soloMode ? "Enter one player name to start solo mode." : `Name at least ${MIN_PLAYERS} players to start.`}
                 </p>
               )}
             </Glass>
@@ -255,7 +257,19 @@ export function SetupScreen({
                 {MODES.map((m) => (
                   <button
                     key={m.id}
-                    onClick={() => { play("pop"); setMode(m.id); }}
+                    onClick={() => {
+                      play("pop");
+                      setMode(m.id);
+                      setRounds(m.id === "solo" ? 20 : m.roundsDefault);
+                      if (m.id === "solo") {
+                        setTeamMode(false);
+                        setPlayers((ps) => ps.slice(0, 1));
+                        setRules({ ...rules, stealEnabled: false });
+                      } else if (mode === "solo") {
+                        setPlayers((ps) => ps.length >= 2 ? ps : [...ps, { name: "", avatar: "1", team: 1 }]);
+                        setRules({ ...rules, stealEnabled: true });
+                      }
+                    }}
                     className={`rounded-xl border p-3 text-left transition ${
                       mode === m.id
                         ? "border-gold-400 bg-gold-400/15"
@@ -290,14 +304,14 @@ export function SetupScreen({
                 {roundsShown && (
                   <div>
                     <div className="mb-2 text-xs uppercase tracking-widest text-white/50">
-                      {mode === "knockout" || mode === "league" ? "Rounds (before eliminations/table)" : "Rounds per player"}
+                      {soloMode ? "Questions" : mode === "knockout" || mode === "league" ? "Rounds (before eliminations/table)" : "Rounds per player"}
                     </div>
                     <div className="flex items-center gap-3">
                       <Btn size="sm" variant="ghost" onClick={() => setRounds((r) => Math.max(1, r - 1))}>
                         <Icon name="minus" size={14} />
                       </Btn>
-                      <span className="font-score w-10 text-center text-4xl text-gold-300">{rounds}</span>
-                      <Btn size="sm" variant="ghost" onClick={() => setRounds((r) => Math.min(10, r + 1))}>
+                        <span className="font-score w-10 text-center text-4xl text-gold-300">{rounds}</span>
+                      <Btn size="sm" variant="ghost" onClick={() => setRounds((r) => Math.min(soloMode ? 100 : 10, r + 1))}>
                         <Icon name="plus" size={14} />
                       </Btn>
                     </div>
