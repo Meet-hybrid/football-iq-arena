@@ -48,3 +48,14 @@ export function startRoom(session: RoomSession) {
     body: JSON.stringify({ type: "start", playerId: session.playerId }),
   });
 }
+
+export function publishRoomState(session: RoomSession, state: unknown) {
+  return request<{ ok: true }>(`/api/rooms/${session.code}/state`, {
+    method: "POST",
+    body: JSON.stringify({ playerId: session.playerId, state }),
+  });
+}
+
+export function getRoomState(code: string) {
+  return request<RoomInfo & { state: unknown }>(`/api/rooms/${code}/state`);
+}

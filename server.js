@@ -344,13 +344,14 @@ const server = createServer(async (req, res) => {
       events: [],
       nextSeq: 1,
       started: false,
+      state: null,
       updatedAt: Date.now(),
     };
     rooms.set(code, room);
     return sendJson(res, 201, { ...publicRoom(room), playerId: hostId, isHost: true });
   }
 
-  const roomMatch = url.pathname.match(/^\/api\/rooms\/([0-9]{6})(?:\/(join|events))?$/);
+  const roomMatch = url.pathname.match(/^\/api\/rooms\/([0-9]{6})(?:\/(join|events|state))?$/);
   if (roomMatch) {
     const code = roomMatch[1];
     const action = roomMatch[2];
@@ -379,6 +380,18 @@ const server = createServer(async (req, res) => {
       }
       room.events.push({ seq: room.nextSeq++, type: String(body.type || "event"), payload: body.payload ?? null, playerId: body.playerId });
       return sendJson(res, 200, publicRoom(room));
+    }
+
+    if (action === "state" && req.method === "GET") {
+      return sendJson(res, 200, { ...publicRoom(room), state: room.state });
+    }
+
+    if (action === "state" && req.method === "POST") {
+      const body = await readJson(req);
+      if (body.playerId !== room.hostId) return sendJson(res, 403, { error: "Only the host can publish game state" });
+      room.state = body.state ?? null;
+      room.updatedAt = Date.now();
+      return sendJson(res, 200, { ok: true });
     }
 
     if (!action && req.method === "GET") return sendJson(res, 200, publicRoom(room));
