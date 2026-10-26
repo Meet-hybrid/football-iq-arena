@@ -35,7 +35,10 @@ function tokenOverlap(a: string, b: string): number {
 
 export function canonicalFor(text: string, q: Question): string | null {
   const input = norm(text);
-  const pairs: [string, string][] = q.answer.map((a) => [norm(a), a]);
+  const pairs: [string, string][] = [
+    ...q.answer.map((a) => [norm(a), a] as [string, string]),
+    ...(q.aliases ?? []).map((a) => [norm(a), a] as [string, string]),
+  ];
   for (const [n, orig] of pairs) if (n === input) return orig;
   for (const [n, orig] of pairs) {
     if (n.length >= 4 && (input.includes(n) || n.includes(input))) return orig;

@@ -158,7 +158,8 @@ export function QuestionScreen({
   }, [q?.id]);
 
   async function doCheck(raw?: string) {
-    if (!q || state.status !== "ask" || checking) return;
+    const answeringSteal = state.status === "steal-ask";
+    if (!q || (state.status !== "ask" && !answeringSteal) || checking) return;
     const text = (raw ?? checkText).trim();
     if (!text) {
       setVerdict({ ok: false, matched: null, display: "Type or say an answer first!", confidence: "none" });
@@ -166,7 +167,7 @@ export function QuestionScreen({
     }
     setChecking(true);
     try {
-      if (timed) {
+      if (timed && !answeringSteal) {
         const res = await aiVerify(text, q, state.timedBank);
         setVerdict(res);
         if (res.ok && res.matched) {
@@ -181,6 +182,12 @@ export function QuestionScreen({
       const res = await aiVerify(text, q, []);
       setVerdict(res);
       setCheckText("");
+      if (answeringSteal) {
+        setAiNote(res.display);
+        if (sound) play(res.ok ? "steal" : "wrong");
+        dispatch({ type: "MARK_STEAL", correct: res.ok });
+        return;
+      }
       if (q.type === "single" || q.type === "truefalse" || q.type === "thisorthat") {
         setAiNote(res.display);
         if (sound) (res.ok ? play("correct") : play("wrong"));
@@ -287,7 +294,7 @@ export function QuestionScreen({
                     Hint
                   </button>
                 )}
-                {sttAvailable() && state.status === "ask" && (
+                {sttAvailable() && (state.status === "ask" || state.status === "steal-ask") && (
                   <button
                     onClick={toggleMic}
                     className={`flex items-center gap-1.5 rounded-lg px-3 py-1 text-xs ${listening ? "animate-pulse bg-flame-500 text-white" : "bg-white/8 text-white/70 hover:bg-white/15"}`}
@@ -441,19 +448,40 @@ export function QuestionScreen({
             )}
 
             {state.status === "steal-ask" && stealer && (
-              <motion.div key="stealask" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-3">                    <p className="text-center font-display text-lg text-gold-300">
-                      Steal attempt — <span className="text-white">{stealer.name}</span>
-                    </p>
-                <div className="grid grid-cols-2 gap-3">
-                  <Btn variant="success" size="lg" onClick={() => dispatch({ type: "MARK_STEAL", correct: true })}>
-                    <Icon name="check" size={18} />
-                    {stealer.name} got it (+{state.config.rules.stealValue})
-                  </Btn>
-                  <Btn variant="danger" size="lg" onClick={() => dispatch({ type: "MARK_STEAL", correct: false })}>
-                    <Icon name="x" size={18} />
-                    Missed
-                  </Btn>
+              <motion.div key="stealask" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-3">
+                <p className="text-center font-display text-lg text-gold-300">
+                  {stealer.name}, answer the same question to steal the points.
+                </p>
+                <div className="glass rounded-xl p-3">
+                  <div className="mb-1.5 flex items-center gap-1.5 text-[11px] uppercase tracking-widest text-white/40">
+                    <Icon name="sparkles" size={12} />
+                    Type or say the answer — the host will verify it
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      autoFocus
+                      value={checkText}
+                      onChange={(e) => setCheckText(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && doCheck()}
+                      placeholder="Answer the question…"
+                      className="min-w-0 flex-1 rounded-lg bg-white/8 px-3 py-2 text-sm text-white outline-none placeholder:text-white/30 focus:bg-white/12"
+                    />
+                    <Btn size="sm" disabled={checking} onClick={() => doCheck()}>
+                      {checking ? "Checking…" : "Check"}
+                    </Btn>
+                  </div>
+                  {sttAvailable() && (
+                    <Btn variant="outline" size="sm" className="mt-2 w-full" onClick={toggleMic}>
+                      <Icon name="mic" size={14} />
+                      {listening ? "Listening…" : "Answer by voice"}
+                    </Btn>
+                  )}
                 </div>
+                {verdict && (
+                  <p className={`text-center text-sm font-semibold ${verdict.ok ? "text-emerald-400" : "text-flame-500"}`}>
+                    {verdict.display}
+                  </p>
+                )}
               </motion.div>
             )}
 
