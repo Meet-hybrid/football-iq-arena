@@ -9,6 +9,7 @@
 // Node 22+ is required (global fetch + --env-file support).
 
 import { createServer } from "node:http";
+import { randomUUID } from "node:crypto";
 import { readFile, stat } from "node:fs/promises";
 import { join, extname, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -40,6 +41,47 @@ const DEFAULT_MODELS = {
   gemini: "gemini-2.5-flash",
 };
 const MODEL = process.env.AI_MODEL || DEFAULT_MODELS[PROVIDER] || "gpt-5-mini";
+
+// Temporary cross-device rooms. These are intentionally in-memory for the
+// first multiplayer slice: no accounts, no stored camera footage, and rooms
+// disappear after inactivity or a server restart.
+const rooms = new Map();
+const ROOM_TTL_MS = 2 * 60 * 60 * 1000;
+
+function randomId(prefix = "p") {
+  return `${prefix}_${randomUUID().replaceAll("-", "").slice(0, 12)}`;
+}
+
+function newRoomCode() {
+  let code;
+  do code = String(Math.floor(100000 + Math.random() * 900000)); while (rooms.has(code));
+  return code;
+}
+
+function publicRoom(room) {
+  return {
+    code: room.code,
+    hostId: room.hostId,
+    players: [...room.players.values()].map(({ id, name, joinedAt }) => ({ id, name, joinedAt })),
+    nextEvent: room.events.length ? room.events[room.events.length - 1].seq + 1 : 1,
+  };
+}
+
+function getRoom(code) {
+  const room = rooms.get(code);
+  if (!room) return null;
+  if (Date.now() - room.updatedAt > ROOM_TTL_MS) {
+    rooms.delete(code);
+    return null;
+  }
+  room.updatedAt = Date.now();
+  return room;
+}
+
+setInterval(() => {
+  const cutoff = Date.now() - ROOM_TTL_MS;
+  for (const [code, room] of rooms) if (room.updatedAt < cutoff) rooms.delete(code);
+}, 15 * 60 * 1000).unref();
 
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -256,6 +298,15 @@ function sendJson(res, status, data) {
   res.end(JSON.stringify(data));
 }
 
+async function readJson(req) {
+  const raw = await readBody(req);
+  try {
+    return JSON.parse(raw || "{}");
+  } catch {
+    throw Object.assign(new Error("Invalid JSON"), { status: 400 });
+  }
+}
+
 async function readBody(req, limit = 64 * 1024) {
   const chunks = [];
   let size = 0;
@@ -279,6 +330,46 @@ const server = createServer(async (req, res) => {
   }
 
   const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
+
+  // --- temporary multiplayer rooms ---------------------------------------
+  if (url.pathname === "/api/rooms" && req.method === "POST") {
+    const body = await readJson(req);
+    const code = newRoomCode();
+    const hostId = randomId("host");
+    const room = {
+      code,
+      hostId,
+      players: new Map([[hostId, { id: hostId, name: String(body.name || "Host").slice(0, 24), joinedAt: Date.now() }]]),
+      events: [],
+      nextSeq: 1,
+      updatedAt: Date.now(),
+    };
+    rooms.set(code, room);
+    return sendJson(res, 201, { ...publicRoom(room), playerId: hostId, isHost: true });
+  }
+
+  const roomMatch = url.pathname.match(/^\/api\/rooms\/([0-9]{6})(?:\/(join|events))?$/);
+  if (roomMatch) {
+    const code = roomMatch[1];
+    const action = roomMatch[2];
+    const room = getRoom(code);
+    if (!room) return sendJson(res, 404, { error: "Room not found or expired" });
+
+    if (action === "join" && req.method === "POST") {
+      const body = await readJson(req);
+      const playerId = randomId("p");
+      room.players.set(playerId, { id: playerId, name: String(body.name || "Player").slice(0, 24), joinedAt: Date.now() });
+      room.events.push({ seq: room.nextSeq++, type: "player_joined", player: room.players.get(playerId) });
+      return sendJson(res, 201, { ...publicRoom(room), playerId, isHost: false });
+    }
+
+    if (action === "events" && req.method === "GET") {
+      const since = Math.max(0, Number(url.searchParams.get("since") || 0));
+      return sendJson(res, 200, { ...publicRoom(room), events: room.events.filter((event) => event.seq > since) });
+    }
+
+    if (!action && req.method === "GET") return sendJson(res, 200, publicRoom(room));
+  }
 
   if (url.pathname === "/api/health") {
     return sendJson(res, 200, { ok: true, provider: PROVIDER, ai: Boolean(API_KEY), model: MODEL });
