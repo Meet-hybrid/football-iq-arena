@@ -11,12 +11,14 @@ export function HomeScreen({
   onNewGame,
   onDaily,
   onStats,
+  onOnline,
 }: {
   sound: boolean;
   onToggleSound: (v: boolean) => void;
   onNewGame: () => void;
   onDaily: () => void;
   onStats: () => void;
+  onOnline: () => void;
 }) {
   const [liveAi, setLiveAi] = useState(aiEnabled());
   const [provider, setProvider] = useState("AI");
@@ -70,6 +72,10 @@ export function HomeScreen({
           <Btn size="lg" onClick={() => { play("whistle"); onNewGame(); }}>
             <Icon name="play" size={18} />
             Start New Game
+          </Btn>
+          <Btn variant="outline" size="lg" onClick={() => { play("pop"); onOnline(); }}>
+            <Icon name="users" size={18} />
+            Play across devices
           </Btn>
           <div className="grid grid-cols-2 gap-3">
             <Btn variant="ghost" onClick={() => { play("pop"); onDaily(); }}>

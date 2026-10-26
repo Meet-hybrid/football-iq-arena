@@ -11,9 +11,10 @@ import { ScoreboardScreen } from "./screens/ScoreboardScreen";
 import { GameOverScreen } from "./screens/GameOverScreen";
 import { StatsScreen } from "./screens/StatsScreen";
 import { DailyChallengeScreen } from "./screens/DailyChallengeScreen";
+import { OnlineScreen } from "./screens/OnlineScreen";
 import type { GameConfig, Player } from "./types";
 
-type Ui = "home" | "setup" | "game" | "stats" | "daily";
+type Ui = "home" | "setup" | "game" | "stats" | "daily" | "online";
 
 export default function App() {
   const [state, dispatch] = useReducer(gameReducer, undefined, initialState);
@@ -45,6 +46,7 @@ export default function App() {
         onNewGame={() => setUi("setup")}
         onDaily={() => setUi("daily")}
         onStats={() => setUi("stats")}
+        onOnline={() => setUi("online")}
       />
     );
   } else if (ui === "setup") {
@@ -53,6 +55,8 @@ export default function App() {
     screen = <StatsScreen onBack={() => setUi("home")} />;
   } else if (ui === "daily") {
     screen = <DailyChallengeScreen onBack={() => setUi("home")} />;
+  } else if (ui === "online") {
+    screen = <OnlineScreen onBack={() => setUi("home")} />;
   } else {
     switch (state.phase) {
       case "category":
@@ -89,7 +93,7 @@ export default function App() {
         );
         break;
       default:
-        screen = <HomeScreen sound={sound} onToggleSound={setSound} onNewGame={() => setUi("setup")} onDaily={() => setUi("daily")} onStats={() => setUi("stats")} />;
+        screen = <HomeScreen sound={sound} onToggleSound={setSound} onNewGame={() => setUi("setup")} onDaily={() => setUi("daily")} onStats={() => setUi("stats")} onOnline={() => setUi("online")} />;
     }
   }
 
