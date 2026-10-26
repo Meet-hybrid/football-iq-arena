@@ -62,7 +62,7 @@ function publicRoom(room) {
   return {
     code: room.code,
     hostId: room.hostId,
-    players: [...room.players.values()].map(({ id, name, joinedAt }) => ({ id, name, joinedAt })),
+    players: [...room.players.values()].map(({ id, name, teamId, joinedAt }) => ({ id, name, teamId, joinedAt })),
     started: room.started,
     nextEvent: room.events.length ? room.events[room.events.length - 1].seq + 1 : 1,
   };
@@ -340,7 +340,7 @@ const server = createServer(async (req, res) => {
     const room = {
       code,
       hostId,
-      players: new Map([[hostId, { id: hostId, name: String(body.name || "Host").slice(0, 24), joinedAt: Date.now() }]]),
+      players: new Map([[hostId, { id: hostId, name: String(body.name || "Host").slice(0, 24), teamId: "a", joinedAt: Date.now() }]]),
       events: [],
       nextSeq: 1,
       started: false,
@@ -363,7 +363,9 @@ const server = createServer(async (req, res) => {
     if (action === "join" && req.method === "POST") {
       const body = await readJson(req);
       const playerId = randomId("p");
-      room.players.set(playerId, { id: playerId, name: String(body.name || "Player").slice(0, 24), joinedAt: Date.now() });
+      const teamACount = [...room.players.values()].filter((player) => player.teamId === "a").length;
+      const teamBCount = [...room.players.values()].filter((player) => player.teamId === "b").length;
+      room.players.set(playerId, { id: playerId, name: String(body.name || "Player").slice(0, 24), teamId: teamACount <= teamBCount ? "a" : "b", joinedAt: Date.now() });
       room.events.push({ seq: room.nextSeq++, type: "player_joined", player: room.players.get(playerId) });
       return sendJson(res, 201, { ...publicRoom(room), playerId, isHost: false });
     }
@@ -379,6 +381,12 @@ const server = createServer(async (req, res) => {
       if (body.type === "start") {
         if (body.playerId !== room.hostId) return sendJson(res, 403, { error: "Only the host can start the match" });
         room.started = true;
+      }
+      if (body.type === "team") {
+        if (body.playerId !== room.hostId) return sendJson(res, 403, { error: "Only the host can assign teams" });
+        const target = room.players.get(String(body.payload?.playerId || ""));
+        if (!target) return sendJson(res, 404, { error: "Player not found" });
+        target.teamId = body.payload?.teamId === "b" ? "b" : "a";
       }
       room.events.push({ seq: room.nextSeq++, type: String(body.type || "event"), payload: body.payload ?? null, playerId: body.playerId });
       return sendJson(res, 200, publicRoom(room));

@@ -1,6 +1,7 @@
 export interface RoomPlayer {
   id: string;
   name: string;
+  teamId: "a" | "b";
   joinedAt: number;
 }
 
@@ -64,6 +65,13 @@ export function sendRoomAction(session: RoomSession, action: import("../types").
   return request<RoomInfo>(`/api/rooms/${session.code}/events`, {
     method: "POST",
     body: JSON.stringify({ type: "action", playerId: session.playerId, payload: action }),
+  });
+}
+
+export function assignRoomTeam(session: RoomSession, playerId: string, teamId: "a" | "b") {
+  return request<RoomInfo>(`/api/rooms/${session.code}/events`, {
+    method: "POST",
+    body: JSON.stringify({ type: "team", playerId: session.playerId, payload: { playerId, teamId } }),
   });
 }
 

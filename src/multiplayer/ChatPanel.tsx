@@ -40,7 +40,7 @@ export function ChatPanel({ session }: { session: RoomSession }) {
       {open && (
         <div className="mb-2 flex h-80 w-80 flex-col rounded-2xl border border-white/10 bg-pitch-950/95 p-3 shadow-2xl">
           <div className="mb-2 flex items-center justify-between text-sm font-bold text-white">
-            <span>Room chat</span>
+            <span>Room chat · everyone</span>
             <button onClick={() => setOpen(false)} className="text-white/50 hover:text-white"><Icon name="x" size={15} /></button>
           </div>
           <div className="flex-1 space-y-2 overflow-y-auto pr-1">

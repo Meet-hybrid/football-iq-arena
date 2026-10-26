@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Btn, Chip, Glass, Icon, Wordmark } from "../components/ui";
-import { createRoom, joinRoom, getRoomState, publishRoomState, startRoom, type RoomSession } from "../multiplayer/rooms";
+import { assignRoomTeam, createRoom, joinRoom, getRoomState, publishRoomState, startRoom, type RoomSession } from "../multiplayer/rooms";
 import { buildPools, createPlayer, DEFAULT_RULES, gameReducer, initialState } from "../game/engine";
 import type { GameConfig, GameState } from "../types";
 import { play } from "../audio/sound";
@@ -69,7 +69,7 @@ export function OnlineScreen({ onBack, onGameReady }: { onBack: () => void; onGa
   async function beginMatch() {
     if (!session || !session.isHost) return;
     try {
-      const players = session.players.map((player, index) => createPlayer(player.id, player.name, String(index)));
+      const players = session.players.map((player, index) => createPlayer(player.id, player.name, String(index), { teamId: player.teamId }));
       const config: GameConfig = {
         mode: "classic",
         difficulty: "medium",
@@ -114,10 +114,31 @@ export function OnlineScreen({ onBack, onGameReady }: { onBack: () => void; onGa
                 <div key={player.id} className="flex items-center gap-3 rounded-xl bg-white/5 px-3 py-3">
                   <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gold-400/15 text-gold-300">{player.name.slice(0, 1).toUpperCase()}</span>
                   <span className="font-semibold text-white">{player.name}</span>
-                  {player.id === session.hostId && <Chip className="ml-auto bg-gold-400/15 text-gold-300">Host</Chip>}
+                  <Chip className="ml-auto bg-white/8 text-white/65">Team {player.teamId.toUpperCase()}</Chip>
+                  {player.id === session.hostId && <Chip className="bg-gold-400/15 text-gold-300">Host</Chip>}
                 </div>
               ))}
             </div>
+            {session.isHost && !session.started && session.players.length > 1 && (
+              <div className="mt-4 rounded-xl bg-white/5 p-3 text-xs text-white/55">
+                <p className="mb-2">Assign teams for 2v2 play:</p>
+                <div className="space-y-2">
+                  {session.players.map((player) => (
+                    <div key={player.id} className="flex items-center gap-2">
+                      <span className="min-w-0 flex-1 truncate text-white/80">{player.name}</span>
+                      {(["a", "b"] as const).map((team) => (
+                        <button key={team} onClick={async () => {
+                          try {
+                            const room = await assignRoomTeam(session, player.id, team);
+                            setSession((current) => current ? { ...current, ...room } : current);
+                          } catch (e) { setError(e instanceof Error ? e.message : "Could not assign team."); }
+                        }} className={`rounded-lg px-2.5 py-1.5 ${player.teamId === team ? "bg-gold-400/25 text-gold-200" : "bg-white/8 text-white/60"}`}>Team {team.toUpperCase()}</button>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             {session.isHost ? (
               <Btn size="lg" className="mt-4 w-full" onClick={beginMatch} disabled={session.started}>
                 <Icon name={session.started ? "check" : "play"} size={17} />
