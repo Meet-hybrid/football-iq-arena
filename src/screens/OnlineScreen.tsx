@@ -69,7 +69,7 @@ export function OnlineScreen({ onBack, onGameReady }: { onBack: () => void; onGa
   async function beginMatch() {
     if (!session || !session.isHost) return;
     try {
-      const players = session.players.map((player, index) => createPlayer(player.id, player.name, String(index), { teamId: player.teamId }));
+      const players = session.players.map((player, index) => createPlayer(player.id, player.name, String(index), { teamId: player.teamId ?? "a" }));
       const config: GameConfig = {
         mode: "classic",
         difficulty: "medium",
@@ -114,7 +114,7 @@ export function OnlineScreen({ onBack, onGameReady }: { onBack: () => void; onGa
                 <div key={player.id} className="flex items-center gap-3 rounded-xl bg-white/5 px-3 py-3">
                   <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gold-400/15 text-gold-300">{player.name.slice(0, 1).toUpperCase()}</span>
                   <span className="font-semibold text-white">{player.name}</span>
-                  <Chip className="ml-auto bg-white/8 text-white/65">Team {player.teamId.toUpperCase()}</Chip>
+                  <Chip className="ml-auto bg-white/8 text-white/65">Team {(player.teamId ?? "a").toUpperCase()}</Chip>
                   {player.id === session.hostId && <Chip className="bg-gold-400/15 text-gold-300">Host</Chip>}
                 </div>
               ))}
@@ -132,7 +132,7 @@ export function OnlineScreen({ onBack, onGameReady }: { onBack: () => void; onGa
                             const room = await assignRoomTeam(session, player.id, team);
                             setSession((current) => current ? { ...current, ...room } : current);
                           } catch (e) { setError(e instanceof Error ? e.message : "Could not assign team."); }
-                        }} className={`rounded-lg px-2.5 py-1.5 ${player.teamId === team ? "bg-gold-400/25 text-gold-200" : "bg-white/8 text-white/60"}`}>Team {team.toUpperCase()}</button>
+                        }} className={`rounded-lg px-2.5 py-1.5 ${(player.teamId ?? "a") === team ? "bg-gold-400/25 text-gold-200" : "bg-white/8 text-white/60"}`}>Team {team.toUpperCase()}</button>
                       ))}
                     </div>
                   ))}
