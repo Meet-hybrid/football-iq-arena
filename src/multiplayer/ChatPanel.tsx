@@ -47,6 +47,7 @@ export function ChatPanel({ session }: { session: RoomSession }) {
             {messages.length === 0 && <p className="text-xs text-white/40">Say something to the room.</p>}
             {messages.map((message) => (
               <div key={message.seq} className={`rounded-lg px-2.5 py-1.5 text-xs ${message.playerId === session.playerId ? "ml-6 bg-gold-400/15 text-gold-100" : "mr-6 bg-white/8 text-white/80"}`}>
+                <div className="mb-0.5 text-[10px] font-bold text-white/45">{message.name}</div>
                 {message.text}
               </div>
             ))}

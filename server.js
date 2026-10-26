@@ -407,7 +407,7 @@ const server = createServer(async (req, res) => {
       if (!room.players.has(body.playerId)) return sendJson(res, 403, { error: "Player is not in this room" });
       const text = String(body.text || "").trim().slice(0, 500);
       if (!text) return sendJson(res, 400, { error: "Message cannot be empty" });
-      const message = { seq: room.nextChatSeq++, playerId: body.playerId, text, scope: body.scope === "team" ? "team" : "room", sentAt: Date.now() };
+      const message = { seq: room.nextChatSeq++, playerId: body.playerId, name: room.players.get(body.playerId).name, text, scope: body.scope === "team" ? "team" : "room", sentAt: Date.now() };
       room.chat.push(message);
       if (room.chat.length > 200) room.chat.shift();
       return sendJson(res, 201, message);

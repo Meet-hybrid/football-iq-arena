@@ -70,6 +70,7 @@ export function sendRoomAction(session: RoomSession, action: import("../types").
 export interface ChatMessage {
   seq: number;
   playerId: string;
+  name: string;
   text: string;
   scope: "room" | "team";
   sentAt: number;
