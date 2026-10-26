@@ -56,6 +56,13 @@ export function publishRoomState(session: RoomSession, state: unknown) {
   });
 }
 
-export function getRoomState(code: string) {
-  return request<RoomInfo & { state: import("../types").GameState | null }>(`/api/rooms/${code}/state`);
+export function getRoomState(code: string, since = 0) {
+  return request<RoomInfo & { state: import("../types").GameState | null; events: Array<{ seq: number; type: string; payload?: unknown; playerId?: string }> }>(`/api/rooms/${code}/state?since=${since}`);
+}
+
+export function sendRoomAction(session: RoomSession, action: import("../types").Action) {
+  return request<RoomInfo>(`/api/rooms/${session.code}/events`, {
+    method: "POST",
+    body: JSON.stringify({ type: "action", playerId: session.playerId, payload: action }),
+  });
 }

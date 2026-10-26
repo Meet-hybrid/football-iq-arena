@@ -1,10 +1,10 @@
-import { lazy, Suspense, useEffect, useReducer, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { gameReducer, initialState, buildPools } from "./game/engine";
 import { setSoundEnabled } from "./audio/sound";
-import type { GameConfig, Player } from "./types";
+import type { Action, GameConfig, Player } from "./types";
 import type { RoomSession } from "./multiplayer/rooms";
-import { getRoomState, publishRoomState } from "./multiplayer/rooms";
+import { getRoomState, publishRoomState, sendRoomAction } from "./multiplayer/rooms";
 
 const HomeScreen = lazy(() => import("./screens/HomeScreen").then((m) => ({ default: m.HomeScreen })));
 const SetupScreen = lazy(() => import("./screens/SetupScreen").then((m) => ({ default: m.SetupScreen })));
@@ -20,9 +20,17 @@ const OnlineScreen = lazy(() => import("./screens/OnlineScreen").then((m) => ({ 
 type Ui = "home" | "setup" | "game" | "stats" | "daily" | "online";
 
 export default function App() {
-  const [state, dispatch] = useReducer(gameReducer, undefined, initialState);
+  const [state, rawDispatch] = useReducer(gameReducer, undefined, initialState);
   const [ui, setUi] = useState<Ui>(() => localStorage.getItem("fia-room-session") ? "online" : "home");
   const [onlineSession, setOnlineSession] = useState<RoomSession | null>(null);
+  const eventSeq = useRef(0);
+  const dispatch = useCallback((action: Action) => {
+    if (onlineSession && !onlineSession.isHost && ui === "game") {
+      void sendRoomAction(onlineSession, action);
+      return;
+    }
+    rawDispatch(action);
+  }, [onlineSession, rawDispatch, ui]);
   const [sound, setSound] = useState(() => localStorage.getItem("fia-sound") !== "off");
   const [tts] = useState(() => localStorage.getItem("fia-tts") !== "off");
 
@@ -36,21 +44,28 @@ export default function App() {
   }, [tts]);
 
   useEffect(() => {
+    if (!onlineSession || !onlineSession.isHost || state.phase === "home" || !state.config) return;
+    void publishRoomState(onlineSession, state);
+  }, [onlineSession, state]);
+
+  useEffect(() => {
     if (!onlineSession) return;
-    if (onlineSession.isHost) {
-      if (state.phase !== "home" && state.config) void publishRoomState(onlineSession, state);
-      return;
-    }
     const timer = window.setInterval(async () => {
       try {
-        const room = await getRoomState(onlineSession.code);
-        if (room.state) dispatch({ type: "SYNC_STATE", state: room.state });
+        const room = await getRoomState(onlineSession.code, eventSeq.current);
+        for (const event of room.events) {
+          eventSeq.current = Math.max(eventSeq.current, event.seq);
+          if (onlineSession.isHost && event.type === "action" && event.payload) {
+            rawDispatch(event.payload as Action);
+          }
+        }
+        if (!onlineSession.isHost && room.state) rawDispatch({ type: "SYNC_STATE", state: room.state });
       } catch {
         // The room UI reports connection errors; the game stays on the last state.
       }
     }, 1200);
     return () => window.clearInterval(timer);
-  }, [onlineSession, state]);
+  }, [onlineSession]);
 
   function startGame(config: GameConfig, players: Player[]) {
     const pools = buildPools(config.difficulty);

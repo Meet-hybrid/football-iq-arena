@@ -383,7 +383,8 @@ const server = createServer(async (req, res) => {
     }
 
     if (action === "state" && req.method === "GET") {
-      return sendJson(res, 200, { ...publicRoom(room), state: room.state });
+      const since = Math.max(0, Number(url.searchParams.get("since") || 0));
+      return sendJson(res, 200, { ...publicRoom(room), state: room.state, events: room.events.filter((event) => event.seq > since) });
     }
 
     if (action === "state" && req.method === "POST") {
