@@ -63,6 +63,7 @@ function publicRoom(room) {
     code: room.code,
     hostId: room.hostId,
     players: [...room.players.values()].map(({ id, name, joinedAt }) => ({ id, name, joinedAt })),
+    started: room.started,
     nextEvent: room.events.length ? room.events[room.events.length - 1].seq + 1 : 1,
   };
 }
@@ -342,6 +343,7 @@ const server = createServer(async (req, res) => {
       players: new Map([[hostId, { id: hostId, name: String(body.name || "Host").slice(0, 24), joinedAt: Date.now() }]]),
       events: [],
       nextSeq: 1,
+      started: false,
       updatedAt: Date.now(),
     };
     rooms.set(code, room);
@@ -366,6 +368,17 @@ const server = createServer(async (req, res) => {
     if (action === "events" && req.method === "GET") {
       const since = Math.max(0, Number(url.searchParams.get("since") || 0));
       return sendJson(res, 200, { ...publicRoom(room), events: room.events.filter((event) => event.seq > since) });
+    }
+
+    if (action === "events" && req.method === "POST") {
+      const body = await readJson(req);
+      if (!room.players.has(body.playerId)) return sendJson(res, 403, { error: "Player is not in this room" });
+      if (body.type === "start") {
+        if (body.playerId !== room.hostId) return sendJson(res, 403, { error: "Only the host can start the match" });
+        room.started = true;
+      }
+      room.events.push({ seq: room.nextSeq++, type: String(body.type || "event"), payload: body.payload ?? null, playerId: body.playerId });
+      return sendJson(res, 200, publicRoom(room));
     }
 
     if (!action && req.method === "GET") return sendJson(res, 200, publicRoom(room));

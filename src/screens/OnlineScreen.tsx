@@ -1,14 +1,26 @@
 import { useEffect, useState } from "react";
 import { Btn, Chip, Glass, Icon, Wordmark } from "../components/ui";
-import { createRoom, joinRoom, refreshRoom, type RoomSession } from "../multiplayer/rooms";
+import { createRoom, joinRoom, refreshRoom, startRoom, type RoomSession } from "../multiplayer/rooms";
 import { play } from "../audio/sound";
 
 export function OnlineScreen({ onBack }: { onBack: () => void }) {
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
-  const [session, setSession] = useState<RoomSession | null>(null);
+  const [session, setSession] = useState<RoomSession | null>(() => {
+    try {
+      const saved = localStorage.getItem("fia-room-session");
+      return saved ? JSON.parse(saved) as RoomSession : null;
+    } catch {
+      return null;
+    }
+  });
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (!session) return;
+    localStorage.setItem("fia-room-session", JSON.stringify(session));
+  }, [session]);
 
   useEffect(() => {
     if (!session) return;
@@ -47,6 +59,16 @@ export function OnlineScreen({ onBack }: { onBack: () => void }) {
     setError("Room code copied.");
   }
 
+  async function beginMatch() {
+    if (!session || !session.isHost) return;
+    try {
+      const room = await startRoom(session);
+      setSession((current) => current ? { ...current, ...room } : current);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not start the room.");
+    }
+  }
+
   if (session) {
     return (
       <div className="pitch-bg min-h-full px-5 py-8">
@@ -76,7 +98,15 @@ export function OnlineScreen({ onBack }: { onBack: () => void }) {
                 </div>
               ))}
             </div>
-            <p className="mt-4 text-center text-xs text-white/40">Game synchronization is the next multiplayer step.</p>
+            {session.isHost ? (
+              <Btn size="lg" className="mt-4 w-full" onClick={beginMatch} disabled={session.started}>
+                <Icon name={session.started ? "check" : "play"} size={17} />
+                {session.started ? "Match started" : "Start match"}
+              </Btn>
+            ) : (
+              <p className="mt-4 text-center text-xs text-white/50">Waiting for the host to start the match…</p>
+            )}
+            {session.started && <p className="mt-3 text-center text-sm text-emerald-300">Everyone is connected. Live game sync is being connected next.</p>}
           </Glass>
           {error && <p className="text-center text-sm text-gold-300">{error}</p>}
         </div>

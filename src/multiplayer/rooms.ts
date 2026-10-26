@@ -9,6 +9,7 @@ export interface RoomInfo {
   hostId: string;
   players: RoomPlayer[];
   nextEvent: number;
+  started: boolean;
 }
 
 export interface RoomSession extends RoomInfo {
@@ -39,4 +40,11 @@ export function joinRoom(code: string, name: string) {
 
 export function refreshRoom(code: string) {
   return request<RoomInfo>(`/api/rooms/${code}/events?since=0`);
+}
+
+export function startRoom(session: RoomSession) {
+  return request<RoomInfo>(`/api/rooms/${session.code}/events`, {
+    method: "POST",
+    body: JSON.stringify({ type: "start", playerId: session.playerId }),
+  });
 }
