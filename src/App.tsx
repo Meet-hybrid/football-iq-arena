@@ -1,18 +1,19 @@
-import { useEffect, useReducer, useState } from "react";
+import { lazy, Suspense, useEffect, useReducer, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { gameReducer, initialState, buildPools } from "./game/engine";
 import { setSoundEnabled } from "./audio/sound";
-import { HomeScreen } from "./screens/HomeScreen";
-import { SetupScreen } from "./screens/SetupScreen";
-import { CategoryWheelScreen } from "./screens/CategoryWheelScreen";
-import { NumberSelectScreen } from "./screens/NumberSelectScreen";
-import { QuestionScreen } from "./screens/QuestionScreen";
-import { ScoreboardScreen } from "./screens/ScoreboardScreen";
-import { GameOverScreen } from "./screens/GameOverScreen";
-import { StatsScreen } from "./screens/StatsScreen";
-import { DailyChallengeScreen } from "./screens/DailyChallengeScreen";
-import { OnlineScreen } from "./screens/OnlineScreen";
 import type { GameConfig, Player } from "./types";
+
+const HomeScreen = lazy(() => import("./screens/HomeScreen").then((m) => ({ default: m.HomeScreen })));
+const SetupScreen = lazy(() => import("./screens/SetupScreen").then((m) => ({ default: m.SetupScreen })));
+const CategoryWheelScreen = lazy(() => import("./screens/CategoryWheelScreen").then((m) => ({ default: m.CategoryWheelScreen })));
+const NumberSelectScreen = lazy(() => import("./screens/NumberSelectScreen").then((m) => ({ default: m.NumberSelectScreen })));
+const QuestionScreen = lazy(() => import("./screens/QuestionScreen").then((m) => ({ default: m.QuestionScreen })));
+const ScoreboardScreen = lazy(() => import("./screens/ScoreboardScreen").then((m) => ({ default: m.ScoreboardScreen })));
+const GameOverScreen = lazy(() => import("./screens/GameOverScreen").then((m) => ({ default: m.GameOverScreen })));
+const StatsScreen = lazy(() => import("./screens/StatsScreen").then((m) => ({ default: m.StatsScreen })));
+const DailyChallengeScreen = lazy(() => import("./screens/DailyChallengeScreen").then((m) => ({ default: m.DailyChallengeScreen })));
+const OnlineScreen = lazy(() => import("./screens/OnlineScreen").then((m) => ({ default: m.OnlineScreen })));
 
 type Ui = "home" | "setup" | "game" | "stats" | "daily" | "online";
 
@@ -98,19 +99,21 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-full">
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={ui + state.phase}
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -12 }}
-          transition={{ duration: 0.25 }}
-          className="min-h-full"
-        >
-          {screen}
-        </motion.div>
-      </AnimatePresence>
-    </div>
+    <Suspense fallback={<div className="pitch-bg flex min-h-full items-center justify-center text-sm text-white/60">Loading the arena…</div>}>
+      <div className="min-h-full">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={ui + state.phase}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.25 }}
+            className="min-h-full"
+          >
+            {screen}
+          </motion.div>
+        </AnimatePresence>
+      </div>
+    </Suspense>
   );
 }
