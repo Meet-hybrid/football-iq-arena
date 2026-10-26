@@ -5,6 +5,7 @@ import { setSoundEnabled } from "./audio/sound";
 import type { Action, GameConfig, Player } from "./types";
 import type { RoomSession } from "./multiplayer/rooms";
 import { getRoomState, publishRoomState, sendRoomAction } from "./multiplayer/rooms";
+import { useFairPlayMonitor, type FairPlaySignal } from "./multiplayer/fairPlay";
 
 const HomeScreen = lazy(() => import("./screens/HomeScreen").then((m) => ({ default: m.HomeScreen })));
 const SetupScreen = lazy(() => import("./screens/SetupScreen").then((m) => ({ default: m.SetupScreen })));
@@ -23,6 +24,7 @@ export default function App() {
   const [state, rawDispatch] = useReducer(gameReducer, undefined, initialState);
   const [ui, setUi] = useState<Ui>(() => localStorage.getItem("fia-room-session") ? "online" : "home");
   const [onlineSession, setOnlineSession] = useState<RoomSession | null>(null);
+  const [fairPlayMessage, setFairPlayMessage] = useState<string | null>(null);
   const eventSeq = useRef(0);
   const dispatch = useCallback((action: Action) => {
     if (onlineSession && !onlineSession.isHost && ui === "game") {
@@ -31,6 +33,17 @@ export default function App() {
     }
     rawDispatch(action);
   }, [onlineSession, rawDispatch, ui]);
+  const onFairPlaySignal = useCallback((signal: FairPlaySignal) => {
+    const messages: Record<FairPlaySignal, string> = {
+      tab_hidden: "You left the game tab. This has been noted for fair play.",
+      window_blur: "The game window lost focus. This has been noted for fair play.",
+      copy: "Copy activity detected. This has been noted for fair play.",
+      paste: "Paste activity detected. This has been noted for fair play.",
+    };
+    setFairPlayMessage(messages[signal]);
+    window.setTimeout(() => setFairPlayMessage(null), 3500);
+  }, []);
+  useFairPlayMonitor(Boolean(onlineSession && ui === "game"), onFairPlaySignal);
   const [sound, setSound] = useState(() => localStorage.getItem("fia-sound") !== "off");
   const [tts] = useState(() => localStorage.getItem("fia-tts") !== "off");
 
@@ -152,6 +165,11 @@ export default function App() {
             {screen}
           </motion.div>
         </AnimatePresence>
+        {fairPlayMessage && (
+          <div role="status" aria-live="polite" className="fixed bottom-4 left-1/2 z-50 -translate-x-1/2 rounded-xl border border-yellow-400/30 bg-pitch-950/95 px-4 py-3 text-center text-xs text-yellow-200 shadow-2xl">
+            {fairPlayMessage}
+          </div>
+        )}
       </div>
     </Suspense>
   );
