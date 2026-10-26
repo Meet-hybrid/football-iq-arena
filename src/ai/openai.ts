@@ -9,6 +9,11 @@ import { checkAnswer, type CheckResult } from "./verify";
 
 let enabled = localStorage.getItem("fia-ai") !== "off";
 
+// In production the static frontend can live on Vercel while the Node AI
+// proxy runs on Render. Leave this empty for local development, where Vite
+// proxies /api to the local server.
+const AI_API_BASE = (import.meta.env.VITE_AI_API_URL ?? "").replace(/\/$/, "");
+
 export function aiEnabled() {
   return enabled;
 }
@@ -22,7 +27,7 @@ async function callAI(action: string, payload: Record<string, unknown>, timeoutM
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const res = await fetch("/api/ai", {
+    const res = await fetch(`${AI_API_BASE}/api/ai`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action, ...payload }),

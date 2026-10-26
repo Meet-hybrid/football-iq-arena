@@ -85,6 +85,20 @@ badge).
 The server is a single zero-dependency Node file (Node 22+); it also serves the
 production build, so the whole app + AI proxy deploys as one unit.
 
+## Deploying frontend and AI backend separately
+
+The frontend can be deployed to Vercel and the AI proxy to Render. This keeps
+provider keys off the browser:
+
+1. Create a Render Blueprint from `render.yaml`.
+2. Set `ANTHROPIC_API_KEY` in the Render service environment. The included
+   Blueprint uses Claude with `AI_MODEL=claude-sonnet-4-6`.
+3. In Vercel, set `VITE_AI_API_URL` to the Render service URL, for example
+   `https://football-iq-arena-api.onrender.com`.
+4. Redeploy the Vercel frontend.
+
+Verify the backend at `https://your-render-service.onrender.com/api/health`.
+
 ## Roadmap (MVP → full spec)
 
 - [x] Local question bank (170+ questions, all 17 categories)
