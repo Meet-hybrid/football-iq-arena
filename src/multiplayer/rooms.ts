@@ -79,13 +79,14 @@ export interface ChatMessage {
   seq: number;
   playerId: string;
   name: string;
+  teamId: "a" | "b";
   text: string;
   scope: "room" | "team";
   sentAt: number;
 }
 
-export function getRoomChat(code: string, since = 0) {
-  return request<{ messages: ChatMessage[] }>(`/api/rooms/${code}/chat?since=${since}`);
+export function getRoomChat(session: RoomSession, since = 0, scope: "room" | "team" = "room") {
+  return request<{ messages: ChatMessage[] }>(`/api/rooms/${session.code}/chat?since=${since}&playerId=${encodeURIComponent(session.playerId)}&scope=${scope}`);
 }
 
 export function sendRoomChat(session: RoomSession, text: string, scope: "room" | "team" = "room") {

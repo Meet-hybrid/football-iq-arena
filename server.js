@@ -407,7 +407,10 @@ const server = createServer(async (req, res) => {
 
     if (action === "chat" && req.method === "GET") {
       const since = Math.max(0, Number(url.searchParams.get("since") || 0));
-      return sendJson(res, 200, { messages: room.chat.filter((message) => message.seq > since) });
+      const player = room.players.get(String(url.searchParams.get("playerId") || ""));
+      if (!player) return sendJson(res, 403, { error: "Player is not in this room" });
+      const scope = url.searchParams.get("scope") === "team" ? "team" : "room";
+      return sendJson(res, 200, { messages: room.chat.filter((message) => message.seq > since && (scope === "room" || (message.scope === "team" && message.teamId === player.teamId))) });
     }
 
     if (action === "chat" && req.method === "POST") {
@@ -415,7 +418,9 @@ const server = createServer(async (req, res) => {
       if (!room.players.has(body.playerId)) return sendJson(res, 403, { error: "Player is not in this room" });
       const text = String(body.text || "").trim().slice(0, 500);
       if (!text) return sendJson(res, 400, { error: "Message cannot be empty" });
-      const message = { seq: room.nextChatSeq++, playerId: body.playerId, name: room.players.get(body.playerId).name, text, scope: body.scope === "team" ? "team" : "room", sentAt: Date.now() };
+      const sender = room.players.get(body.playerId);
+      const scope = body.scope === "team" ? "team" : "room";
+      const message = { seq: room.nextChatSeq++, playerId: body.playerId, name: sender.name, teamId: sender.teamId, text, scope, sentAt: Date.now() };
       room.chat.push(message);
       if (room.chat.length > 200) room.chat.shift();
       return sendJson(res, 201, message);

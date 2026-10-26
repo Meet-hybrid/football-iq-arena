@@ -5,6 +5,7 @@ import { Btn, Icon } from "../components/ui";
 
 export function ChatPanel({ session }: { session: RoomSession }) {
   const [open, setOpen] = useState(false);
+  const [scope, setScope] = useState<"room" | "team">("room");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [text, setText] = useState("");
 
@@ -12,7 +13,7 @@ export function ChatPanel({ session }: { session: RoomSession }) {
     if (!open) return;
     const load = async () => {
       try {
-        const result = await getRoomChat(session.code, messages.at(-1)?.seq ?? 0);
+        const result = await getRoomChat(session, messages.at(-1)?.seq ?? 0, scope);
         if (result.messages.length) setMessages((current) => [...current, ...result.messages].slice(-100));
       } catch {
         // The game remains usable if chat is temporarily unavailable.
@@ -21,14 +22,14 @@ export function ChatPanel({ session }: { session: RoomSession }) {
     void load();
     const timer = window.setInterval(load, 1500);
     return () => window.clearInterval(timer);
-  }, [open, session.code, messages]);
+  }, [open, session.code, session.playerId, scope, messages]);
 
   async function send() {
     const value = text.trim();
     if (!value) return;
     setText("");
     try {
-      const message = await sendRoomChat(session, value);
+      const message = await sendRoomChat(session, value, scope);
       setMessages((current) => [...current, message].slice(-100));
     } catch {
       setText(value);
@@ -40,11 +41,14 @@ export function ChatPanel({ session }: { session: RoomSession }) {
       {open && (
         <div className="mb-2 flex h-80 w-80 flex-col rounded-2xl border border-white/10 bg-pitch-950/95 p-3 shadow-2xl">
           <div className="mb-2 flex items-center justify-between text-sm font-bold text-white">
-            <span>Room chat · everyone</span>
+            <div className="flex items-center gap-1 rounded-lg bg-white/8 p-0.5 text-[10px]">
+              <button onClick={() => { setScope("room"); setMessages([]); }} className={`rounded-md px-2 py-1 ${scope === "room" ? "bg-gold-400/20 text-gold-200" : "text-white/50"}`}>Room</button>
+              <button onClick={() => { setScope("team"); setMessages([]); }} className={`rounded-md px-2 py-1 ${scope === "team" ? "bg-gold-400/20 text-gold-200" : "text-white/50"}`}>Team</button>
+            </div>
             <button onClick={() => setOpen(false)} className="text-white/50 hover:text-white"><Icon name="x" size={15} /></button>
           </div>
           <div className="flex-1 space-y-2 overflow-y-auto pr-1">
-            {messages.length === 0 && <p className="text-xs text-white/40">Say something to the room.</p>}
+            {messages.length === 0 && <p className="text-xs text-white/40">{scope === "team" ? "Message your teammate privately." : "Say something to the room."}</p>}
             {messages.map((message) => (
               <div key={message.seq} className={`rounded-lg px-2.5 py-1.5 text-xs ${message.playerId === session.playerId ? "ml-6 bg-gold-400/15 text-gold-100" : "mr-6 bg-white/8 text-white/80"}`}>
                 <div className="mb-0.5 text-[10px] font-bold text-white/45">{message.name}</div>
