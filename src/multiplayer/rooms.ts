@@ -66,3 +66,22 @@ export function sendRoomAction(session: RoomSession, action: import("../types").
     body: JSON.stringify({ type: "action", playerId: session.playerId, payload: action }),
   });
 }
+
+export interface ChatMessage {
+  seq: number;
+  playerId: string;
+  text: string;
+  scope: "room" | "team";
+  sentAt: number;
+}
+
+export function getRoomChat(code: string, since = 0) {
+  return request<{ messages: ChatMessage[] }>(`/api/rooms/${code}/chat?since=${since}`);
+}
+
+export function sendRoomChat(session: RoomSession, text: string, scope: "room" | "team" = "room") {
+  return request<ChatMessage>(`/api/rooms/${session.code}/chat`, {
+    method: "POST",
+    body: JSON.stringify({ playerId: session.playerId, text, scope }),
+  });
+}
