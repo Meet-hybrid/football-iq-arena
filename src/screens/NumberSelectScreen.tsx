@@ -1,8 +1,6 @@
-import { useState } from "react";
 import { motion } from "framer-motion";
 import { Avatar, Btn, Chip, Glass, Icon, avatarRingFor } from "../components/ui";
 import { CATEGORY_MAP } from "../data/categories";
-import { aiGenerateQuestion } from "../ai/openai";
 import type { Action, GameState } from "../types";
 import type { Dispatch } from "react";
 import { play } from "../audio/sound";
@@ -14,27 +12,8 @@ export function NumberSelectScreen({
   state: GameState;
   dispatch: Dispatch<Action>;
 }) {
-  const [generating, setGenerating] = useState(false);
-  const [genMsg, setGenMsg] = useState<string | null>(null);
-
   if (!state.category) return null;
   const cat = CATEGORY_MAP[state.category];
-
-  async function generateAIQuestion() {
-    if (!state.category || generating) return;
-    setGenerating(true);
-    setGenMsg(null);
-    const q = await aiGenerateQuestion(state.category, state.config.difficulty);
-    if (q) {
-      dispatch({ type: "ADD_AI_QUESTION", category: state.category, question: q });
-      setGenMsg(`AI added question #${state.pools[state.category].length + 1} to the board.`);
-      play("coin");
-    } else {
-      setGenMsg("Live AI unavailable right now — try again in a moment.");
-      play("wrong");
-    }
-    setGenerating(false);
-  }
   const pool = state.pools[state.category];
   const used = state.used[state.category];
   const player = state.players[state.turnPlayerId];
@@ -102,26 +81,7 @@ export function NumberSelectScreen({
             <Icon name="dice" size={18} />
             Random Number
           </Btn>
-          <Btn
-            size="lg"
-            variant="outline"
-            disabled={generating}
-            onClick={generateAIQuestion}
-          >
-            {generating ? (
-              <>
-                <Icon name="sparkles" size={16} className="animate-pulse" />
-                Thinking…
-              </>
-            ) : (
-              <>
-                <Icon name="sparkles" size={16} />
-                AI Question
-              </>
-            )}
-          </Btn>
         </div>
-        {genMsg && <p className="text-center text-sm text-gold-300">{genMsg}</p>}
 
         <p className="text-center text-xs text-white/40">
           Questions never repeat until every number has been used.

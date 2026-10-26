@@ -406,7 +406,9 @@ export function gameReducer(state: GameState, action: Action): GameState {
       if (s.phase !== "question" || s.status !== "steal") return s;
       if (!action.id) {
         s.status = "resolved";
-        s.lastOutcome = "none";
+        // Nobody took the steal. The original miss is now final, so the UI
+        // may reveal the answer.
+        s.lastOutcome = "wrong";
         pushLog(s, s.turnPlayerId, 0, "Nobody stole the question");
         return s;
       }

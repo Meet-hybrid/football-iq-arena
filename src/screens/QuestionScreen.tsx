@@ -218,6 +218,7 @@ export function QuestionScreen({
   }
 
   if (!q || !cat) return null;
+  const revealAnswer = state.lastOutcome === "wrong" || state.lastOutcome === "timeout" || state.lastOutcome === "eliminated";
   const pct = total > 0 ? (remaining / total) * 100 : 0;
   const showTimer = remaining > 0 && active;
 
@@ -494,7 +495,7 @@ export function QuestionScreen({
                       <span className="font-score text-3xl text-gold-300">{state.timedCorrectCount}</span> names ·{" "}
                       <span className="font-bold text-emerald-400">+{state.delta[state.turnPlayerId] ?? 0} pts</span>
                     </p>
-                  ) : (
+                  ) : revealAnswer ? (
                     <div className="flex flex-wrap gap-2">
                       {q.type === "truefalse" ? (
                         <Chip className="bg-white/10 text-white/90">{q.answer[0]}</Chip>
@@ -504,6 +505,10 @@ export function QuestionScreen({
                         ))
                       )}
                     </div>
+                  ) : (
+                    <p className="text-sm text-white/60">
+                      Answer locked — it was not revealed because the question was answered correctly.
+                    </p>
                   )}
                   {aiNote && (
                     <p className="mt-2 flex items-center gap-1.5 text-xs text-gold-300">
