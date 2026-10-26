@@ -6,11 +6,12 @@ import { motion } from "framer-motion";
 export type IconName =
   | "play" | "calendar" | "chart" | "volume" | "mute" | "mic" | "sparkles"
   | "home" | "refresh" | "trophy" | "arrow-left" | "arrow-right" | "dice"
-  | "bolt" | "target" | "shield" | "crown" | "medal" | "flame" | "check"
+  | "bolt" | "target" | "shield" | "crown" | "medal" | "flame" | "check" | "camera"
   | "x" | "lock" | "clock" | "flag" | "users" | "plus" | "minus" | "stop"
   | "lightbulb" | "disk" | "chevron-down" | "chevron-up";
 
 const ICON_PATHS: Record<IconName, ReactNode> = {
+  camera: <><path d="M4 7h3l1.5-2h7L17 7h3v11H4z" /><circle cx="12" cy="12.5" r="3.2" /></>,
   play: <polygon points="6 3 20 12 6 21 6 3" fill="currentColor" stroke="none" />,
   calendar: (
     <>

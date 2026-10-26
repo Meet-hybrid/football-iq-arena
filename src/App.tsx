@@ -17,6 +17,7 @@ const GameOverScreen = lazy(() => import("./screens/GameOverScreen").then((m) =>
 const StatsScreen = lazy(() => import("./screens/StatsScreen").then((m) => ({ default: m.StatsScreen })));
 const DailyChallengeScreen = lazy(() => import("./screens/DailyChallengeScreen").then((m) => ({ default: m.DailyChallengeScreen })));
 const OnlineScreen = lazy(() => import("./screens/OnlineScreen").then((m) => ({ default: m.OnlineScreen })));
+const CameraFairPlay = lazy(() => import("./multiplayer/CameraFairPlay").then((m) => ({ default: m.CameraFairPlay })));
 
 type Ui = "home" | "setup" | "game" | "stats" | "daily" | "online";
 
@@ -165,6 +166,9 @@ export default function App() {
             {screen}
           </motion.div>
         </AnimatePresence>
+        {onlineSession && ui === "game" && (
+          <CameraFairPlay onSignal={(message) => setFairPlayMessage(message)} />
+        )}
         {fairPlayMessage && (
           <div role="status" aria-live="polite" className="fixed bottom-4 left-1/2 z-50 -translate-x-1/2 rounded-xl border border-yellow-400/30 bg-pitch-950/95 px-4 py-3 text-center text-xs text-yellow-200 shadow-2xl">
             {fairPlayMessage}
